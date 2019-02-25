@@ -1,5 +1,5 @@
-#ifndef tcp_CONTEXT_H
-#define tcp_CONTEXT_H
+#ifndef HB_TCP_CONTEXT_H
+#define HB_TCP_CONTEXT_H
 
 #include <stdint.h>
 
