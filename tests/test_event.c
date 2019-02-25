@@ -20,10 +20,12 @@ int main(void)
 
 
 	assert(0 == hb_event_list_setup(&event_list));
-
 	assert(0 == hb_event_list_lock(&event_list));
 	assert(0 == hb_event_list_unlock(&event_list));
+	hb_event_list_cleanup(&event_list);
 
+
+	assert(0 == hb_event_list_setup(&event_list));
 
 	assert(0 == hb_event_list_lock(&event_list));
 	assert(0 == hb_event_list_pop_swap(&event_list, &evt, &count));
