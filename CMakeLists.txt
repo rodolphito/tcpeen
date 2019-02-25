@@ -63,6 +63,8 @@ set(TCP_LIBRARY_SRCS
 	include/hb/allocator.h
 	src/thread.c
 	include/hb/thread.h
+	src/buffer.c
+	include/hb/buffer.h
 	src/event.c
 	include/hb/event.h
 	src/tcp_connection.c
@@ -89,6 +91,9 @@ target_link_libraries(test_endpoint ${HB_LINK_LIBS})
 
 add_executable(test_event tests/test_event.c)
 target_link_libraries(test_event ${HB_LINK_LIBS})
+
+add_executable(test_buffer tests/test_buffer.c)
+target_link_libraries(test_buffer ${HB_LINK_LIBS})
 
 
 #
