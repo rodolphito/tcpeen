@@ -30,4 +30,14 @@ void hb_thread_sleep(uint64_t ns);
 
 uint64_t hb_thread_id(void);
 
+
+typedef struct hb_mutex {
+	void *mtx_impl;
+} hb_mutex_t;
+
+int hb_mutex_setup(hb_mutex_t *mtx);
+int hb_mutex_lock(hb_mutex_t *mtx);
+int hb_mutex_unlock(hb_mutex_t *mtx);
+void hb_mutex_cleanup(hb_mutex_t *mtx);
+
 #endif

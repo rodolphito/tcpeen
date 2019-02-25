@@ -63,6 +63,8 @@ set(TCP_LIBRARY_SRCS
 	include/hb/allocator.h
 	src/thread.c
 	include/hb/thread.h
+	src/event.c
+	include/hb/event.h
 	src/tcp_connection.c
 	include/hb/tcp_connection.h
 	src/tcp_context.c
@@ -78,9 +80,15 @@ list(APPEND HB_LINK_LIBS tcpeen)
 #
 # build test executables
 # TODO: make a cache variable to turn tests on/off
-
+# TODO: build foreach loop before this sections gets out of control
+# TODO: output to a separate folder
+# TODO: organize within VS somehow
+# TODO: connect to CTest / test target to run all tests
 add_executable(test_endpoint tests/test_endpoint.c)
 target_link_libraries(test_endpoint ${HB_LINK_LIBS})
+
+add_executable(test_event tests/test_event.c)
+target_link_libraries(test_event ${HB_LINK_LIBS})
 
 
 #
