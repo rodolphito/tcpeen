@@ -7,6 +7,10 @@
 #include "hb/endpoint.h"
 
 
+// forwards
+typedef struct hb_buffer_s hb_buffer_t;
+
+
 #define HB_EVENT_MAX_SIZE 256
 #define HB_EVENT_PAD_SIZE (HB_EVENT_MAX_SIZE) - sizeof(uint32_t) - sizeof(uint32_t)
 
@@ -57,9 +61,7 @@ typedef struct {
 typedef struct {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
-	uint16_t data_offset;
-	uint16_t data_length;
-	uint8_t *data_ptr;
+	hb_buffer_t *buffer;
 } hb_event_client_read_t;
 
 
