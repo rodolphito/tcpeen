@@ -14,6 +14,7 @@
 #define HB_THREAD_SLEEP_MS(ms) aws_thread_current_sleep(ms * HB_TIME_NS_PER_MS)
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef enum hb_tstamp_unit_e {
 	HB_TSTAMP_S = 1,
