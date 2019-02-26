@@ -5,7 +5,8 @@
 int main(void)
 {
 	hb_buffer_pool_t pool;
-	hb_buffer_t *buffer1, *buffer2;
+	hb_buffer_t *buffer1 = NULL;
+	hb_buffer_t *buffer2 = NULL;
 
 	assert(0 == hb_buffer_pool_setup(&pool, 128, 8));
 	assert(0 == hb_buffer_pool_lock(&pool));
