@@ -120,7 +120,7 @@ void hb_log_setup()
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_cleanup()
+void hb_log_cleanup(void)
 {
 #ifndef HB_LOG_DISABLE
 	hb_log_trace("Application logging completed");
