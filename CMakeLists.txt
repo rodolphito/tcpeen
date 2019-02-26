@@ -71,6 +71,10 @@ set(TCP_LIBRARY_SRCS
 	include/hb/tcp_connection.h
 	src/tcp_context.c
 	include/hb/tcp_context.h
+	src/tcp_service.c
+	include/hb/tcp_service.h
+	src/tcp_service_internal.c
+	src/tcp_service_internal.h
 	include/hb/error.h
 )
 add_library(tcpeen ${TCP_LIBRARY_SRCS})
@@ -94,6 +98,9 @@ target_link_libraries(test_event ${HB_LINK_LIBS})
 
 add_executable(test_buffer tests/test_buffer.c)
 target_link_libraries(test_buffer ${HB_LINK_LIBS})
+
+add_executable(test_tcp_service tests/test_tcp_service.c)
+target_link_libraries(test_tcp_service ${HB_LINK_LIBS})
 
 
 #
