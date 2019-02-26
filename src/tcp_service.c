@@ -156,6 +156,8 @@ int tcp_service_stop()
 	}
 
 	tcp_service.state = TCP_SERVICE_STOPPED;
+    HB_MEM_RELEASE(priv);
+    priv = NULL;
 
 	return HB_SUCCESS;
 }
