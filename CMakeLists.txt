@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.02)
 project(tcpeen LANGUAGES C)
+enable_testing()
+
 set(HB_LINK_LIBS "")
-
-
-# hardcode off for now
-set(BUILD_TESTING OFF)
 
 #
 # prep compile flags
@@ -76,6 +74,7 @@ set(TCP_LIBRARY_SRCS
 	src/tcp_service_internal.c
 	src/tcp_service_internal.h
 	include/hb/error.h
+	include/hb/test_harness.h
 )
 add_library(tcpeen ${TCP_LIBRARY_SRCS})
 target_link_libraries(tcpeen ${HB_LINK_LIBS})
@@ -88,19 +87,22 @@ list(APPEND HB_LINK_LIBS tcpeen)
 # TODO: make a cache variable to turn tests on/off
 # TODO: build foreach loop before this sections gets out of control
 # TODO: output to a separate folder
-# TODO: organize within VS somehow
-# TODO: connect to CTest / test target to run all tests
+# TODO: migrate to aws style single target / multiple cases
 add_executable(test_endpoint tests/test_endpoint.c)
 target_link_libraries(test_endpoint ${HB_LINK_LIBS})
+add_test(NAME test_endpoint COMMAND $<TARGET_FILE_NAME:test_endpoint>)
 
 add_executable(test_event tests/test_event.c)
 target_link_libraries(test_event ${HB_LINK_LIBS})
+add_test(NAME test_event COMMAND $<TARGET_FILE_NAME:test_event>)
 
 add_executable(test_buffer tests/test_buffer.c)
 target_link_libraries(test_buffer ${HB_LINK_LIBS})
+add_test(NAME test_buffer COMMAND $<TARGET_FILE_NAME:test_buffer>)
 
 add_executable(test_tcp_service tests/test_tcp_service.c)
 target_link_libraries(test_tcp_service ${HB_LINK_LIBS})
+add_test(NAME test_tcp_service COMMAND $<TARGET_FILE_NAME:test_tcp_service>)
 
 
 #
