@@ -114,6 +114,8 @@ void hb_log_setup()
 #	endif
 
 	hb_log_trace("Application logging started ... ");
+
+    atexit(hb_log_cleanup);
 #endif
 }
 
