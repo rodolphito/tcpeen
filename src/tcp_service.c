@@ -155,8 +155,6 @@ int tcp_service_stop()
 		hb_log_error("Error joining thread: %d", ret);
 	}
 
-	HB_MEM_RELEASE(priv->uv_thread);
-
 	tcp_service.state = TCP_SERVICE_STOPPED;
 
 	return HB_SUCCESS;
