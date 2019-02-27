@@ -95,8 +95,8 @@ int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API hb_unity_memtest_dealloc()
 	HB_GUARD(hb_blocks);
 	HB_GUARD(hb_buffer);
 
-	HB_MEM_RELEASE_PTR(&hb_blocks);
-	HB_MEM_RELEASE_PTR(&hb_buffer);
+	HB_MEM_RELEASE(hb_blocks);
+	HB_MEM_RELEASE(hb_buffer);
 
 	return HB_SUCCESS;
 }

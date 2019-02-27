@@ -45,7 +45,7 @@ HB_TEST_CASE_BEGIN(test_list_ops)
 	ASSERT_SUCCESS(hb_list_count(&list, &count));
 	ASSERT_TRUE(count == 1);
 
-	ASSERT_SUCCESS(hb_list_pop_back(&list, &pout));
+	ASSERT_SUCCESS(hb_list_pop_back(&list, (void **)&pout));
 	ASSERT_SUCCESS(hb_list_count(&list, &count));
 	ASSERT_TRUE(count == 0);
 	ASSERT_TRUE(*pout == p1);

@@ -93,7 +93,7 @@ void hb_log_lock_impl(void *udata, int lock)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_setup()
+void hb_log_setup(void)
 {
 #ifndef HB_LOG_DISABLE
 	if (hb_log_ready) return;

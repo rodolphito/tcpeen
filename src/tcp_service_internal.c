@@ -30,8 +30,8 @@ void on_close_cb(uv_handle_t *handle)
 void free_write_req(uv_write_t *req)
 {
 	tcp_write_req_t *send_req = (tcp_write_req_t *)req;
-	HB_MEM_RELEASE(send_req->buf.base);
-	HB_MEM_RELEASE(send_req);
+	// HB_MEM_RELEASE(send_req->buf.base);
+	// HB_MEM_RELEASE(send_req);
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -56,15 +56,20 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
+    int ret;
 	tcp_channel_t *channel = handle->data;
 	if (!channel->read_buffer) {
-		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
+		HB_GUARD_CLEANUP(ret = hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
+        HB_GUARD_CLEANUP(ret = hb_buffer_setup(channel->read_buffer));
 	}
-	buf->base = hb_buffer_get_ptr(channel->read_buffer->buf);
+
+	HB_GUARD_CLEANUP(hb_buffer_write_ptr(channel->read_buffer, buf->base, &buf->len));
+    hb_log_trace("Using buffer: %p, len: %zu", buf->base, buf->len);
 
 	return;
 
 cleanup:
+    hb_log_uv_error(ret);
 	buf->base = NULL;
 	buf->len = 0;
 }
@@ -155,7 +160,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	HB_GUARD_CLEANUP(ret = uv_read_start((uv_stream_t *)client_handle, on_recv_alloc_cb, on_recv_cb));
 
 	char peerstr[255];
-	size_t recvbuf = 0, sendbuff = 0;
+	int recvbuf = 0, sendbuff = 0;
 	struct sockaddr_storage peeraddr;
 	int addrlen = sizeof(peeraddr);
 	HB_GUARD_CLEANUP(ret = uv_tcp_getpeername(client_handle, (struct sockaddr *)&peeraddr, &addrlen));
@@ -163,8 +168,8 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&channel->endpoint, peerstr, 255));
 	hb_log_info("connection from: %s", peerstr);
 
-	HB_GUARD_CLEANUP(ret = uv_recv_buffer_size(client_handle, &recvbuf));
-
+	HB_GUARD_CLEANUP(ret = uv_recv_buffer_size((uv_handle_t *)client_handle, &recvbuf));
+    hb_log_trace("recv buf: %d", recvbuf);
 	
 	
 	return;

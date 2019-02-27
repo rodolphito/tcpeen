@@ -57,7 +57,7 @@ int tcp_channel_list_open(tcp_channel_list_t *list, tcp_channel_t **out_channel)
 	HB_GUARD_NULL(list);
 	HB_GUARD_NULL(out_channel);
 
-	HB_GUARD(ret = hb_list_pop_back(&list->client_list_free, out_channel));
+	HB_GUARD(ret = hb_list_pop_back(&list->client_list_free, (void **)out_channel));
 	HB_GUARD(ret = hb_list_push_back(&list->client_list_open, out_channel, &index));
 	(*out_channel)->list_id = index;
 
@@ -74,7 +74,7 @@ int tcp_channel_list_close(tcp_channel_list_t *list, tcp_channel_t *channel)
 	size_t index = 0;
 	tcp_channel_t *back_channel;
 	HB_GUARD(ret = hb_list_count(&list->client_list_open, &index));
-	HB_GUARD(ret = hb_list_get(&list->client_list_open, (index - 1), &back_channel));
+	HB_GUARD(ret = hb_list_get(&list->client_list_open, (index - 1), (void **)&back_channel));
 
 	HB_GUARD(ret = hb_list_remove(&list->client_list_open, channel->list_id));
 	back_channel->list_id = channel->list_id;

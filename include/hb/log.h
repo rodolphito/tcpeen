@@ -63,7 +63,7 @@ typedef enum hb_log_level_e {
 #endif
 
 
-void hb_log_setup();
+void hb_log_setup(void);
 void hb_log_cleanup(void);
 
 // TODO: udata and locking should probably be private
