@@ -2,7 +2,7 @@
 #define HB_LIST_H
 
 #include <stdint.h>
-
+#include <stddef.h>
 
 typedef struct hb_list_s {
 	void *priv_impl;
