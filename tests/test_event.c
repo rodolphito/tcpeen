@@ -1,22 +1,23 @@
-#include <string.h>
-
 #include "hb/test_harness.h"
 #include "hb/event.h"
 
-int main(void)
-{
+#include <string.h>
+
+HB_TEST_CASE_BEGIN(test_event_list)
 	hb_event_list_t event_list;
 	hb_event_base_t *evt;
 	hb_event_client_open_t *evt_open;
 	uint32_t count = 0;
 	uint32_t id;
 
+	uint64_t max_size = HB_EVENT_MAX_SIZE;
+
 	// test that our sizes are correct (since we pass these to managed)
-	ASSERT_TRUE(sizeof(hb_event_base_t) == HB_EVENT_MAX_SIZE);
-	ASSERT_TRUE(sizeof(hb_event_error_t) <= HB_EVENT_MAX_SIZE);
-	ASSERT_TRUE(sizeof(hb_event_client_open_t) <= HB_EVENT_MAX_SIZE);
-	ASSERT_TRUE(sizeof(hb_event_client_close_t) <= HB_EVENT_MAX_SIZE);
-	ASSERT_TRUE(sizeof(hb_event_client_read_t) <= HB_EVENT_MAX_SIZE);
+	ASSERT_TRUE(sizeof(hb_event_base_t) == max_size);
+	ASSERT_TRUE(sizeof(hb_event_error_t) <= max_size);
+	ASSERT_TRUE(sizeof(hb_event_client_open_t) <= max_size);
+	ASSERT_TRUE(sizeof(hb_event_client_close_t) <= max_size);
+	ASSERT_TRUE(sizeof(hb_event_client_read_t) <= max_size);
 
 
 	ASSERT_SUCCESS(hb_event_list_setup(&event_list));
@@ -52,5 +53,7 @@ int main(void)
 
 	hb_event_list_cleanup(&event_list);
 
-	return 0;
+	return HB_SUCCESS;
 }
+
+HB_TEST_CASE(test_events, test_event_list);

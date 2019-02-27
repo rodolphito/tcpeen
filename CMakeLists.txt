@@ -6,7 +6,7 @@ set(HB_LINK_LIBS "")
 
 #
 # prep compile flags
-if (NOT WIN32)
+if(NOT WIN32)
 	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC")
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pie")
 else()
@@ -57,6 +57,8 @@ set(TCP_LIBRARY_SRCS
 	include/hb/endpoint.h
 	src/uuid.c
 	include/hb/uuid.h
+	src/list.c
+	include/hb/list.h
 	src/allocator.c
 	include/hb/allocator.h
 	src/thread.c
@@ -73,6 +75,8 @@ set(TCP_LIBRARY_SRCS
 	include/hb/tcp_service.h
 	src/tcp_service_internal.c
 	src/tcp_service_internal.h
+	src/tcp_channel.c
+	include/hb/tcp_channel.h
 	include/hb/error.h
 	include/hb/test_harness.h
 )
@@ -85,24 +89,26 @@ list(APPEND HB_LINK_LIBS tcpeen)
 #
 # build test executables
 # TODO: make a cache variable to turn tests on/off
-# TODO: build foreach loop before this sections gets out of control
 # TODO: output to a separate folder
-# TODO: migrate to aws style single target / multiple cases
-add_executable(test_endpoint tests/test_endpoint.c)
-target_link_libraries(test_endpoint ${HB_LINK_LIBS})
-add_test(NAME test_endpoint COMMAND $<TARGET_FILE_NAME:test_endpoint>)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/deps/aws-c-common/cmake")
+include(AwsTestHarness)
 
-add_executable(test_event tests/test_event.c)
-target_link_libraries(test_event ${HB_LINK_LIBS})
-add_test(NAME test_event COMMAND $<TARGET_FILE_NAME:test_event>)
+file(GLOB TESTS_C "tests/*.c")
+file(GLOB TESTS_H "tests/*.h")
+file(GLOB TESTS ${TESTS_H} ${TESTS_C})
 
-add_executable(test_buffer tests/test_buffer.c)
-target_link_libraries(test_buffer ${HB_LINK_LIBS})
-add_test(NAME test_buffer COMMAND $<TARGET_FILE_NAME:test_buffer>)
+add_test_case(test_events)
+add_test_case(test_tcp_service)
+add_test_case(test_buffer_pool)
+add_test_case(test_endpoints)
+add_test_case(test_event_list_create)
+add_test_case(test_event_list_ops)
 
-add_executable(test_tcp_service tests/test_tcp_service.c)
-target_link_libraries(test_tcp_service ${HB_LINK_LIBS})
-add_test(NAME test_tcp_service COMMAND $<TARGET_FILE_NAME:test_tcp_service>)
+generate_test_driver(tcpeen-tests)
+target_link_libraries(tcpeen-tests ${HB_LINK_LIBS})
+if(MSVC)
+    target_compile_definitions(tcpeen-tests PRIVATE "-D_CRT_SECURE_NO_WARNINGS")
+endif()
 
 
 #
@@ -123,6 +129,15 @@ set(TCP_SERVER_SRCS
 )
 add_executable(tcpserv ${TCP_SERVER_SRCS})
 target_link_libraries(tcpserv ${HB_LINK_LIBS})
+
+
+#
+# build tcpserver unity executable
+set(TCP_SERVER_SRCS
+	src/tcpserv/tcpserv_unity.c
+)
+add_executable(tcpserv_unity ${TCP_SERVER_SRCS})
+target_link_libraries(tcpserv_unity ${HB_LINK_LIBS})
 
 
 #

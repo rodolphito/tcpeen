@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "hb/endpoint.h"
 
 #include "uv.h"
@@ -6,10 +5,10 @@
 #include "hb/error.h"
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_get_string(hb_endpoint_t *endpoint, char *buf, int buflen)
+int hb_endpoint_get_string(hb_endpoint_t *endpoint, char *buf, int buf_len)
 {
 	uint16_t port = 0;
-	memset(buf, 0, buflen);
+	memset(buf, 0, buf_len);
 
 	char ipbuf[255];
 	memset(ipbuf, 0, 255);

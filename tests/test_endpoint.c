@@ -5,15 +5,14 @@
 #include "hb/error.h"
 #include "hb/log.h"
 
-int main(void)
-{
+HB_TEST_CASE_BEGIN(test_endpoint)
 	char buf[255];
 	hb_endpoint_t endpoint;
 	struct sockaddr_in6 sa6;
 	struct sockaddr_in sa;
 
 	// test that our size if correct (since we pass this to managed)
-	ASSERT_TRUE(sizeof(endpoint) == HB_ENDPOINT_MAX_SIZE);
+	ASSERT_INT_EQUALS(sizeof(endpoint), HB_ENDPOINT_MAX_SIZE);
 
 	// test ipv4 conversion
 	ASSERT_SUCCESS(uv_ip4_addr("1.2.3.4", 5354, &sa));
@@ -37,5 +36,7 @@ int main(void)
 	ASSERT_SUCCESS(hb_endpoint_get_string(&endpoint, buf, 255));
 	ASSERT_SUCCESS(strcmp(buf, "fe80::2c92:d74a:43ba:12345"));
 
-	return 0;
+	return HB_SUCCESS;
 }
+
+HB_TEST_CASE(test_endpoints, test_endpoint)

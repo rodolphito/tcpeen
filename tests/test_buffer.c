@@ -1,8 +1,7 @@
 #include "hb/test_harness.h"
 #include "hb/buffer.h"
 
-int main(void)
-{
+HB_TEST_CASE_BEGIN(test_buffer)
 	hb_buffer_pool_t pool;
 	hb_buffer_t *buffer1 = NULL;
 	hb_buffer_t *buffer2 = NULL;
@@ -41,5 +40,7 @@ int main(void)
 	ASSERT_SUCCESS(hb_buffer_pool_unlock(&pool));
 	hb_buffer_pool_cleanup(&pool);
 
-	return 0;
+	return HB_SUCCESS;
 }
+
+HB_TEST_CASE(test_buffer_pool, test_buffer)

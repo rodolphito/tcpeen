@@ -21,7 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#define _CRT_SECURE_NO_WARNINGS
 #if _MSC_VER
 #	include <windows.h>
 #endif

@@ -1,8 +1,3 @@
-#ifdef _MSC_VER
-// don't tell me about sprintf being unsafe
-#	define _CRT_SECURE_NO_WARNINGS
-#endif
-
 // #define UV_THREAD_HANDLE_DEBUG
 
 // system includes
