@@ -1,6 +1,8 @@
 #include "hb/list.h"
 
-#if (HB_LIST_IMPL == HB_LIST_IMPL_ARRAY)
+#if (HB_LIST_IMPL == HB_LIST_IMPL_AWS_ARRAY_LIST)
+
+#include "aws/common/array_list.h"
 
 #include "hb/error.h"
 #include "hb/allocator.h"
@@ -58,7 +60,7 @@ int hb_list_push_back(hb_list_t *list, void *item, size_t *out_index)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_pop_back(hb_list_t *list, void **item)
+int hb_list_pop_back(hb_list_t *list, void *item)
 {
 	HB_GUARD_NULL(list);
 	HB_GUARD_NULL(item);

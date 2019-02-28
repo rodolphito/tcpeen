@@ -18,7 +18,7 @@ HB_TEST_CASE_BEGIN(test_buffer)
 	ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer1));
 	ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer2));
 
-	hb_buffer_pool_release(&pool, buffer1);
+	hb_buffer_pool_release(&pool, &buffer1);
 
 	ASSERT_SUCCESS(hb_buffer_pool_unlock(&pool));
 	hb_buffer_pool_cleanup(&pool);

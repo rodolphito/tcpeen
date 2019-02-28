@@ -31,18 +31,18 @@ int hb_buffer_remaining_length(hb_buffer_t *buffer, size_t *out_remaining)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t *out_write_ptr, size_t *out_write_len)
+int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *out_write_len)
 {
-    out_write_ptr = buffer->buf.buffer + buffer->buf.len;
+    *out_write_ptr = buffer->buf.buffer + buffer->buf.len;
     *out_write_len = buffer->buf.capacity - buffer->buf.len;
     return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t *out_read_ptr, size_t *out_read_len)
+int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_read_len)
 {
-    out_read_ptr = buffer->buf.buffer + buffer->buf.len;
-    *out_read_len = buffer->buf.capacity - buffer->buf.len;
+    *out_read_ptr = buffer->pos.ptr;
+    *out_read_len = buffer->pos.len;
     return HB_SUCCESS;
 }
 
@@ -61,7 +61,7 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 	memset(pool->allocation, 0, block_count * block_size);
 
 	HB_GUARD_NULL_CLEANUP(pool->buffer_array = HB_MEM_ACQUIRE(block_count * sizeof(*pool->buffer_array)));
-	memset(pool->allocation, 0, block_count * sizeof(*pool->buffer_array));
+	memset(pool->buffer_array, 0, block_count * sizeof(*pool->buffer_array));
 
 	HB_GUARD_CLEANUP(ret = hb_list_setup(&pool->buffer_list_free, block_count, sizeof(void *)));
 
@@ -121,15 +121,18 @@ int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 	HB_GUARD_NULL(pool);
 	HB_GUARD_NULL(out_buffer);
 
-	*out_buffer = NULL;
+	HB_GUARD(hb_list_pop_back(&pool->buffer_list_free, out_buffer));
 
 	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t *buffer)
+int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t **buffer)
 {
-	if (pool && buffer) {
-	}
+	HB_GUARD_NULL(pool);
+	HB_GUARD_NULL(buffer);
+
+	HB_GUARD(hb_list_push_back(&pool->buffer_list_free, buffer, NULL));
+
 	return HB_SUCCESS;
 }

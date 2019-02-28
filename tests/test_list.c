@@ -24,7 +24,6 @@ HB_TEST_CASE_BEGIN(test_list_ops)
 	uintptr_t p0 = 12983712837;
 	uintptr_t p1 = 97829736300;
 	uintptr_t out = 0;
-	uintptr_t *pout = &out;
 	size_t count = 0;
 	size_t index = 0;
 
@@ -45,10 +44,10 @@ HB_TEST_CASE_BEGIN(test_list_ops)
 	ASSERT_SUCCESS(hb_list_count(&list, &count));
 	ASSERT_TRUE(count == 1);
 
-	ASSERT_SUCCESS(hb_list_pop_back(&list, (void **)&pout));
+	ASSERT_SUCCESS(hb_list_pop_back(&list, &out));
 	ASSERT_SUCCESS(hb_list_count(&list, &count));
 	ASSERT_TRUE(count == 0);
-	ASSERT_TRUE(*pout == p1);
+	ASSERT_TRUE(out == p1);
 
 	hb_list_cleanup(&list);
 

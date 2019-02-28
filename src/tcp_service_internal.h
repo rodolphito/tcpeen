@@ -19,13 +19,14 @@ typedef struct tcp_service_priv_s {
 } tcp_service_priv_t;
 
 typedef struct tcp_service_write_req_s {
-	uv_write_t req;
-	uv_buf_t buf;
+	uv_write_t uv_req;
+	uv_buf_t uv_buf;
+	tcp_service_t *service;
+	hb_buffer_t *buffer;
 } tcp_service_write_req_t;
 
 void on_close_release_cb(uv_handle_t* handle);
 void on_close_cb(uv_handle_t *handle);
-void free_write_req(uv_write_t *req);
 void on_send_cb(uv_write_t *req, int status);
 void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf);
 void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf);

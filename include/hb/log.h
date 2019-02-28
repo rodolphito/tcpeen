@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "hb/config.h"
 #include "hb/thread.h"
 
 
@@ -60,6 +61,11 @@ typedef enum hb_log_level_e {
 #	define hb_log_disable(b) hb_log_set_quiet(1);
 #	define hb_log_level(l) hb_log_set_level(l);
 #	define hb_log_file(f) hb_log_set_fp(f);
+#endif
+
+#ifndef HB_BUILD_DEBUG
+#	undef hb_log_trace
+#	define hb_log_trace(...) ((void)0)
 #endif
 
 

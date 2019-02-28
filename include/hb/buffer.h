@@ -31,8 +31,8 @@ typedef struct hb_buffer_pool_s {
 int hb_buffer_setup(hb_buffer_t *buffer);
 int hb_buffer_add_length(hb_buffer_t *buffer, size_t len);
 int hb_buffer_remaining_length(hb_buffer_t *buffer, size_t *out_remaining);
-int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t *out_write_ptr, size_t *out_write_len);
-int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t *out_read_ptr, size_t *out_read_len);
+int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *out_write_len);
+int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_read_len);
 
 
 int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size);
@@ -42,7 +42,7 @@ int hb_buffer_pool_lock(hb_buffer_pool_t *pool);
 int hb_buffer_pool_unlock(hb_buffer_pool_t *pool);
 
 int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
-int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t *buffer);
+int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t **buffer);
 
 
 #endif

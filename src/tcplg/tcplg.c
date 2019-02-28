@@ -183,7 +183,7 @@ void on_tick_cb(uv_timer_t *req)
 			printf("\n\nWaiting for last messages =====================================\n");
 		}
 	} else if (phase == 3) {
-		if (elapsed > 2.0) {
+		if (elapsed > 10.0) {
 			for (int i = 0; i < g_num_conns; i++) {
 				tcp_conn_disconnect(&g_tcp_conns[i]);
 			}

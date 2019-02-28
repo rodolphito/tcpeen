@@ -8,6 +8,9 @@
 #include "hb/tcp_connection.h"
 
 
+#define HB_SERVICE_USE_BUFFER_POOL
+
+
 uint64_t send_msgs = 0;
 uint64_t send_bytes = 0;
 uint64_t recv_msgs = 0;
@@ -18,6 +21,17 @@ uint64_t recv_bytes = 0;
 // --------------------------------------------------------------------------------------------------------------
 void on_close_release_cb(uv_handle_t* handle)
 {
+	tcp_channel_t *channel = handle->data;
+	HB_GUARD_NULL_CLEANUP(channel);
+
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	if (channel->read_buffer) {
+		hb_buffer_pool_release(&channel->service->pool, &channel->read_buffer);
+		channel->read_buffer = NULL;
+	}
+#endif
+
+cleanup:
 	HB_MEM_RELEASE(handle);
 }
 
@@ -27,62 +41,81 @@ void on_close_cb(uv_handle_t *handle)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void free_write_req(uv_write_t *req)
-{
-	tcp_write_req_t *send_req = (tcp_write_req_t *)req;
-	// HB_MEM_RELEASE(send_req->buf.base);
-	// HB_MEM_RELEASE(send_req);
-}
-
-// --------------------------------------------------------------------------------------------------------------
 void on_send_cb(uv_write_t *req, int status)
 {
-	tcp_service_t *service = req->data;
-	HB_GUARD_NULL_CLEANUP(service);
-	tcp_service_priv_t *priv = service->priv;
+	tcp_service_write_req_t *write_req = (tcp_service_write_req_t *)req;
+	assert(write_req);
+
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	tcp_service_t *service = write_req->service;
+	assert(service);
+
+	hb_buffer_t *buffer = write_req->buffer;
+	assert(buffer);
+#endif
 
 	if (status) {
 		hb_log_uv_error(status);
 	} else {
-		tcp_write_req_t *send_req = (tcp_write_req_t *)req;
 		send_msgs++;
-		send_bytes += send_req->buf.len;
+		send_bytes += write_req->uv_buf.len;
 	}
 
-cleanup:
-	free_write_req(req);
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	hb_buffer_pool_release(&service->pool, &buffer);
+#else
+	HB_MEM_RELEASE(write_req->uv_buf.base);
+#endif
+
+	HB_MEM_RELEASE(write_req);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
-    int ret;
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	int ret;
 	tcp_channel_t *channel = handle->data;
 	if (!channel->read_buffer) {
 		HB_GUARD_CLEANUP(ret = hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
         HB_GUARD_CLEANUP(ret = hb_buffer_setup(channel->read_buffer));
 	}
 
-	HB_GUARD_CLEANUP(hb_buffer_write_ptr(channel->read_buffer, buf->base, &buf->len));
-    hb_log_trace("Using buffer: %p, len: %zu", buf->base, buf->len);
+	uint8_t *bufbase = NULL;
+	size_t buflen = 0;
+	HB_GUARD_CLEANUP(hb_buffer_write_ptr(channel->read_buffer, &bufbase, &buflen));
+
+	buf->base = bufbase;
+	buf->len = UV_BUFLEN_CAST(buflen);
 
 	return;
 
 cleanup:
     hb_log_uv_error(ret);
+	if (channel->read_buffer) {
+		hb_buffer_pool_release(&channel->service->pool, &channel->read_buffer);
+		channel->read_buffer = NULL;
+	}
 	buf->base = NULL;
 	buf->len = 0;
+#else
+	if ((buf->base = HB_MEM_ACQUIRE(suggested_size))) {
+		buf->len = UV_BUFLEN_CAST(suggested_size);
+		return;
+	}
+	buf->base = NULL;
+	buf->len = 0;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 {
 	int ret = UV_EINVAL;
-	tcp_write_req_t *send_req = NULL;
+	tcp_service_write_req_t *send_req = NULL;
 	
-	tcp_service_t *service = handle->data;
-	HB_GUARD_NULL_CLEANUP(service);
-	tcp_service_priv_t *priv = service->priv;
+	tcp_channel_t *channel = handle->data;
+	HB_GUARD_NULL_CLEANUP(channel);
 
 	if (nread < 0) { // nread an error when < 0
 		switch (nread) {
@@ -100,6 +133,10 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 		goto cleanup;
 	}
 
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	hb_buffer_add_length(channel->read_buffer, nread);
+#endif
+
 	recv_msgs++;
 	recv_bytes += nread;
 
@@ -108,12 +145,21 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 		goto close;
 	}
 
-	send_req->req.data = service;
-	send_req->buf = uv_buf_init(buf->base, UV_BUFLEN_CAST(nread));
-	if ((ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)handle, &send_req->buf, 1, on_send_cb))) {
+	send_req->uv_req.data = channel->read_buffer;
+	send_req->uv_buf = uv_buf_init(buf->base, UV_BUFLEN_CAST(nread));
+
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	send_req->service = channel->service;
+	send_req->buffer = channel->read_buffer;
+#endif
+	if ((ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)handle, &send_req->uv_buf, 1, on_send_cb))) {
 		hb_log_uv_error((int)nread);
 		goto close;
 	}
+
+#ifdef HB_SERVICE_USE_BUFFER_POOL
+	channel->read_buffer = NULL;
+#endif
 
 	return;
 
@@ -121,8 +167,11 @@ close:
 	if (!uv_is_closing((uv_handle_t *)handle)) uv_close((uv_handle_t *)handle, on_close_release_cb);
 
 cleanup:
-	if (buf && buf->base) HB_MEM_RELEASE(buf->base);
 	if (send_req) HB_MEM_RELEASE(send_req);
+
+#ifndef HB_SERVICE_USE_BUFFER_POOL
+	if (buf && buf->base) HB_MEM_RELEASE(buf->base);
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -166,11 +215,8 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	HB_GUARD_CLEANUP(ret = uv_tcp_getpeername(client_handle, (struct sockaddr *)&peeraddr, &addrlen));
 	HB_GUARD_CLEANUP(ret = hb_endpoint_convert_from(&channel->endpoint, &peeraddr));
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&channel->endpoint, peerstr, 255));
-	hb_log_info("connection from: %s", peerstr);
 
 	HB_GUARD_CLEANUP(ret = uv_recv_buffer_size((uv_handle_t *)client_handle, &recvbuf));
-    hb_log_trace("recv buf: %d", recvbuf);
-	
 	
 	return;
 
