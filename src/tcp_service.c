@@ -106,7 +106,7 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
 
 	HB_GUARD_CLEANUP(ret = tcp_channel_list_setup(&service->channel_list, HB_SERVICE_MAX_CLIENTS));
 
-	HB_GUARD_CLEANUP(ret = hb_buffer_pool_setup(&service->pool, HB_SERVICE_MAX_CLIENTS, HB_SERVICE_MAX_READ));
+	HB_GUARD_CLEANUP(ret = hb_buffer_pool_setup(&service->pool, HB_SERVICE_MAX_CLIENTS * 10, HB_SERVICE_MAX_READ));
 	HB_GUARD_CLEANUP(ret = hb_event_list_setup(&service->events));
 
 	char ipbuf[255];
@@ -184,5 +184,17 @@ int tcp_service_update(tcp_service_t *service, uintptr_t *evt_base, uint32_t *co
 	evt_base = NULL;
 	*count = 0;
 
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_stats_clear(tcp_service_t *service)
+{
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_stats_get(tcp_service_t *service, tcp_service_stats_t *stats)
+{
 	return HB_SUCCESS;
 }

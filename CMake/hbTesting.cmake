@@ -10,6 +10,5 @@ function(hb_test_single c_file_name test_case_name target_link_libs target_compi
 	add_executable(${TEST_SINGLE_TARGET} ${TEST_OUTPUT_C})
 	target_include_directories(${TEST_SINGLE_TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 	target_link_libraries(${TEST_SINGLE_TARGET} ${target_link_libs})
-	message(${TEST_SINGLE_TARGET} ${target_link_libs})
 	target_compile_definitions(${TEST_SINGLE_TARGET} PRIVATE ${target_compile_defs} -DAWS_UNSTABLE_TESTING_API)
 endfunction()

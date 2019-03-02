@@ -8,36 +8,33 @@
 #include "hb/tcp_connection.h"
 
 
-#define HB_SERVICE_USE_BUFFER_POOL
-
-
 uint64_t send_msgs = 0;
 uint64_t send_bytes = 0;
 uint64_t recv_msgs = 0;
 uint64_t recv_bytes = 0;
 
 
+typedef struct uv_buffer_work_req_s {
+	uv_work_t uv_req;
+	hb_buffer_t *hb_buffer;
+	uv_stream_t *tcp_handle;
+	int ret;
+	int close;
+} uv_buffer_work_req_t;
+
 
 // --------------------------------------------------------------------------------------------------------------
 void on_close_release_cb(uv_handle_t* handle)
 {
 	tcp_channel_t *channel = handle->data;
-	HB_GUARD_NULL_CLEANUP(channel);
+	assert(channel);
 
-#ifdef HB_SERVICE_USE_BUFFER_POOL
 	if (channel->read_buffer) {
-		hb_buffer_pool_release(&channel->service->pool, &channel->read_buffer);
+		hb_buffer_release(channel->read_buffer);
 		channel->read_buffer = NULL;
 	}
-#endif
 
-cleanup:
 	HB_MEM_RELEASE(handle);
-}
-
-// --------------------------------------------------------------------------------------------------------------
-void on_close_cb(uv_handle_t *handle)
-{
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -46,13 +43,8 @@ void on_send_cb(uv_write_t *req, int status)
 	tcp_service_write_req_t *write_req = (tcp_service_write_req_t *)req;
 	assert(write_req);
 
-#ifdef HB_SERVICE_USE_BUFFER_POOL
-	tcp_service_t *service = write_req->service;
-	assert(service);
-
 	hb_buffer_t *buffer = write_req->buffer;
 	assert(buffer);
-#endif
 
 	if (status) {
 		hb_log_uv_error(status);
@@ -61,11 +53,7 @@ void on_send_cb(uv_write_t *req, int status)
 		send_bytes += write_req->uv_buf.len;
 	}
 
-#ifdef HB_SERVICE_USE_BUFFER_POOL
-	hb_buffer_pool_release(&service->pool, &buffer);
-#else
-	HB_MEM_RELEASE(write_req->uv_buf.base);
-#endif
+	hb_buffer_release(buffer);
 
 	HB_MEM_RELEASE(write_req);
 }
@@ -73,16 +61,17 @@ void on_send_cb(uv_write_t *req, int status)
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
-#ifdef HB_SERVICE_USE_BUFFER_POOL
 	int ret;
 	tcp_channel_t *channel = handle->data;
 	if (!channel->read_buffer) {
-		HB_GUARD_CLEANUP(ret = hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
-        HB_GUARD_CLEANUP(ret = hb_buffer_setup(channel->read_buffer));
+		ret = UV_ENOBUFS;
+		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
+        HB_GUARD_CLEANUP(hb_buffer_setup(channel->read_buffer));
 	}
 
 	uint8_t *bufbase = NULL;
 	size_t buflen = 0;
+	ret = UV_E2BIG;
 	HB_GUARD_CLEANUP(hb_buffer_write_ptr(channel->read_buffer, &bufbase, &buflen));
 
 	buf->base = bufbase;
@@ -93,26 +82,69 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 cleanup:
     hb_log_uv_error(ret);
 	if (channel->read_buffer) {
-		hb_buffer_pool_release(&channel->service->pool, &channel->read_buffer);
+		hb_buffer_release(channel->read_buffer);
 		channel->read_buffer = NULL;
 	}
 	buf->base = NULL;
 	buf->len = 0;
-#else
-	if ((buf->base = HB_MEM_ACQUIRE(suggested_size))) {
-		buf->len = UV_BUFLEN_CAST(suggested_size);
-		return;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+void on_task_complete_cb(uv_work_t *req, int status)
+{
+	int ret;
+	uv_buffer_work_req_t *work_req = (uv_buffer_work_req_t *)req;
+	assert(work_req);
+
+	if (work_req->ret || work_req->close || status == UV_ECANCELED) {
+		goto cleanup;
 	}
-	buf->base = NULL;
-	buf->len = 0;
-#endif
+
+	tcp_service_write_req_t *send_req = req->data;
+	if ((ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)work_req->tcp_handle, &send_req->uv_buf, 1, on_send_cb))) {
+		hb_log_uv_error(ret);
+		work_req->close = 1;
+		goto cleanup;
+	}
+
+cleanup:
+	HB_MEM_RELEASE(req);
+}
+
+// --------------------------------------------------------------------------------------------------------------
+void on_task_process_cb(uv_work_t *req)
+{
+	tcp_service_write_req_t *send_req = NULL;
+
+	uv_buffer_work_req_t *work_req = (uv_buffer_work_req_t *)req;
+	assert(work_req);
+
+	if (!(send_req = HB_MEM_ACQUIRE(sizeof(*send_req)))) {
+		hb_log_uv_error(UV_ENOMEM);
+		goto cleanup;
+	}
+
+	uint8_t *buf = NULL;
+	size_t len = 0;
+	HB_GUARD_CLEANUP(hb_buffer_read_ptr(work_req->hb_buffer, &buf, &len));
+	send_req->uv_buf = uv_buf_init(buf, UV_BUFLEN_CAST(len));
+	send_req->buffer = work_req->hb_buffer;
+	req->data = send_req;
+
+	return;
+
+cleanup:
+	work_req->ret = HB_ERROR;
+	work_req->close = 1;
+
+	if (send_req) HB_MEM_RELEASE(send_req);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 {
 	int ret = UV_EINVAL;
-	tcp_service_write_req_t *send_req = NULL;
+	uv_buffer_work_req_t *work_req = NULL;
 	
 	tcp_channel_t *channel = handle->data;
 	HB_GUARD_NULL_CLEANUP(channel);
@@ -133,33 +165,28 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 		goto cleanup;
 	}
 
-#ifdef HB_SERVICE_USE_BUFFER_POOL
-	hb_buffer_add_length(channel->read_buffer, nread);
-#endif
-
 	recv_msgs++;
 	recv_bytes += nread;
+	HB_GUARD_CLEANUP(hb_buffer_add_length(channel->read_buffer, nread));
 
-	if (!(send_req = HB_MEM_ACQUIRE(sizeof(*send_req)))) {
-		hb_log_uv_error(ENOMEM);
+	if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
+		hb_log_uv_error(UV_ENOMEM);
 		goto close;
 	}
 
-	send_req->uv_req.data = channel->read_buffer;
-	send_req->uv_buf = uv_buf_init(buf->base, UV_BUFLEN_CAST(nread));
+	work_req->uv_req.data = NULL;
+	work_req->tcp_handle = handle;
+	work_req->hb_buffer = channel->read_buffer;
+	work_req->close = 0;
+	work_req->ret = HB_SUCCESS;
 
-#ifdef HB_SERVICE_USE_BUFFER_POOL
-	send_req->service = channel->service;
-	send_req->buffer = channel->read_buffer;
-#endif
-	if ((ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)handle, &send_req->uv_buf, 1, on_send_cb))) {
-		hb_log_uv_error((int)nread);
-		goto close;
-	}
-
-#ifdef HB_SERVICE_USE_BUFFER_POOL
 	channel->read_buffer = NULL;
-#endif
+
+	tcp_service_priv_t *service_priv = (tcp_service_priv_t *)channel->service->priv;
+	if ((ret = uv_queue_work(service_priv->uv_loop, (uv_work_t *)work_req, on_task_process_cb, on_task_complete_cb))) {
+		hb_log_uv_error(ret);
+		goto close;
+	}
 
 	return;
 
@@ -167,11 +194,7 @@ close:
 	if (!uv_is_closing((uv_handle_t *)handle)) uv_close((uv_handle_t *)handle, on_close_release_cb);
 
 cleanup:
-	if (send_req) HB_MEM_RELEASE(send_req);
-
-#ifndef HB_SERVICE_USE_BUFFER_POOL
-	if (buf && buf->base) HB_MEM_RELEASE(buf->base);
-#endif
+	if (work_req) HB_MEM_RELEASE(work_req);
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -242,10 +265,10 @@ void on_timer_cb(uv_timer_t *handle)
 	}
 
 	if (service->state != TCP_SERVICE_STARTED) {
-		if (!uv_is_closing((uv_handle_t *)priv->tcp_handle)) uv_close((uv_handle_t *)priv->tcp_handle, on_close_cb);
-		if (!uv_is_closing((uv_handle_t *)priv->uv_accept_timer)) uv_close((uv_handle_t *)priv->uv_accept_timer, on_close_cb);
-		if (!uv_is_closing((uv_handle_t *)priv->uv_prep)) uv_close((uv_handle_t *)priv->uv_prep, on_close_cb);
-		if (!uv_is_closing((uv_handle_t *)priv->uv_check)) uv_close((uv_handle_t *)priv->uv_check, on_close_cb);
+		if (!uv_is_closing((uv_handle_t *)priv->tcp_handle)) uv_close((uv_handle_t *)priv->tcp_handle, NULL);
+		if (!uv_is_closing((uv_handle_t *)priv->uv_accept_timer)) uv_close((uv_handle_t *)priv->uv_accept_timer, NULL);
+		if (!uv_is_closing((uv_handle_t *)priv->uv_prep)) uv_close((uv_handle_t *)priv->uv_prep, NULL);
+		if (!uv_is_closing((uv_handle_t *)priv->uv_check)) uv_close((uv_handle_t *)priv->uv_check, NULL);
 	}
 
 	return;
@@ -304,6 +327,6 @@ void on_walk_cb(uv_handle_t* handle, void* arg)
 	// TODO: take appropriate action based on handle type
 	if (!uv_is_closing(handle)) {
 		hb_log_warning("Manually closing handle: %p -- %s", handle, uv_handle_type_name(uv_handle_get_type(handle)));
-		uv_close(handle, on_close_cb);
+		uv_close(handle, NULL);
 	}
 }

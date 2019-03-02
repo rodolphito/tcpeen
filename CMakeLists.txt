@@ -122,8 +122,8 @@ generate_test_driver(tcpeen-tests)
 target_link_libraries(tcpeen-tests ${HB_TARGET_LINK_LIBS})
 target_compile_definitions(tcpeen-tests PRIVATE ${HB_TARGET_COMPILE_DEFS})
 
-# TODO: runner for single test for easy debug step through an impl issue
-hb_test_single(test_list test_list_ops "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
+# runner for single test for easy debug step through an impl issue
+hb_test_single(test_buffer test_buffer_pool "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
 
 #
 # build tcploadgen executable

@@ -7,25 +7,29 @@
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_setup(hb_buffer_t *buffer)
 {
+	assert(buffer);
     buffer->buf.len = 0;
     buffer->pos.ptr = buffer->buf.buffer;
-    buffer->pos.len = buffer->buf.capacity;
+    buffer->pos.len = 0;
     return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_add_length(hb_buffer_t *buffer, size_t len)
 {
+	assert(buffer);
     if (buffer->buf.capacity - buffer->buf.len >= len) {
         buffer->buf.len += len;
         buffer->pos.len += len;
+		return HB_SUCCESS;
     }
-    return HB_SUCCESS;
+    return HB_ERROR;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_remaining_length(hb_buffer_t *buffer, size_t *out_remaining)
 {
+	assert(buffer);
     *out_remaining = buffer->buf.capacity - buffer->buf.len;
     return HB_SUCCESS;
 }
@@ -33,6 +37,7 @@ int hb_buffer_remaining_length(hb_buffer_t *buffer, size_t *out_remaining)
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *out_write_len)
 {
+	assert(buffer);
     *out_write_ptr = buffer->buf.buffer + buffer->buf.len;
     *out_write_len = buffer->buf.capacity - buffer->buf.len;
     return HB_SUCCESS;
@@ -41,9 +46,18 @@ int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *ou
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_read_len)
 {
+	assert(buffer);
     *out_read_ptr = buffer->pos.ptr;
     *out_read_len = buffer->pos.len;
     return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_release(hb_buffer_t *buffer)
+{
+	HB_GUARD_NULL(buffer);
+	HB_GUARD_NULL(buffer->pool);
+	return hb_buffer_pool_release(buffer->pool, &buffer);
 }
 
 
@@ -71,6 +85,7 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 
 		uint8_t *buf = pool->allocation + (i * block_size);
 
+		buffer->pool = pool;
 		buffer->buf = aws_byte_buf_from_empty_array(buf, block_size);
 		buffer->pos = aws_byte_cursor_from_buf(&buffer->buf);
 		HB_GUARD_CLEANUP(ret = hb_list_push_back(&pool->buffer_list_free, &buffer, NULL));
@@ -78,6 +93,8 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 
 	pool->block_count = block_count;
 	pool->block_size = block_size;
+	pool->blocks_inuse = 0;
+	pool->bytes_inuse = 0;
 
 	return HB_SUCCESS;
 
@@ -94,6 +111,9 @@ cleanup:
 void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool)
 {
 	if (!pool) return;
+
+	pool->blocks_inuse = 0;
+	pool->bytes_inuse = 0;
 
 	hb_mutex_cleanup(&pool->mtx);
 	hb_list_cleanup(&pool->buffer_list_free);
@@ -118,10 +138,14 @@ int hb_buffer_pool_unlock(hb_buffer_pool_t *pool)
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 {
+	int ret;
 	HB_GUARD_NULL(pool);
 	HB_GUARD_NULL(out_buffer);
 
-	HB_GUARD(hb_list_pop_back(&pool->buffer_list_free, out_buffer));
+	HB_GUARD(ret = hb_list_pop_back(&pool->buffer_list_free, out_buffer));
+
+	pool->blocks_inuse++;
+	pool->bytes_inuse += pool->block_size;
 
 	return HB_SUCCESS;
 }
@@ -133,6 +157,9 @@ int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t **buffer)
 	HB_GUARD_NULL(buffer);
 
 	HB_GUARD(hb_list_push_back(&pool->buffer_list_free, buffer, NULL));
+
+	pool->blocks_inuse--;
+	pool->bytes_inuse -= pool->block_size;
 
 	return HB_SUCCESS;
 }
