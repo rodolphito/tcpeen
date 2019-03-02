@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.02)
+cmake_minimum_required(VERSION 3.0.2)
 project(tcpeen LANGUAGES C)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/deps/aws-c-common/cmake ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
