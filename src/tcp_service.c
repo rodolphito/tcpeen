@@ -55,7 +55,7 @@ void tcp_service_io_thread(void *data)
 	priv->tcp_handle->data = service;
 	HB_GUARD_CLEANUP(ret = uv_tcp_nodelay(priv->tcp_handle, 1));
 	HB_GUARD_CLEANUP(ret = uv_tcp_bind(priv->tcp_handle, (const struct sockaddr *)&service->host_listen.sockaddr, 0));
-	HB_GUARD_CLEANUP(ret = uv_listen((uv_stream_t *)priv->tcp_handle, 1024, on_connection_cb));
+	HB_GUARD_CLEANUP(ret = uv_listen((uv_stream_t *)priv->tcp_handle, HB_SERVICE_MAX_CLIENTS, on_connection_cb));
 
 
 	// listener is up

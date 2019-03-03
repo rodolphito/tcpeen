@@ -49,6 +49,7 @@ uv_loop_t *g_loop = NULL;
 // {
 // 	uv_stream_t *t
 // } client_ctx_t;
+int g_tty_enabled = 0;
 int g_max_connections_per_timer = 1000;
 int g_num_conns = 0;
 tcp_ctx_t *g_tcp_ctx;
@@ -134,7 +135,7 @@ void on_tick_cb(uv_timer_t *req)
 		}
 
 		buf.len = sprintf(tty_data, "\033[2A\033[1000D%s%zu           \033[1B\033[1000D%s%zu           \033[1B\033[1000D%s%zu           ", pend_str, connecting, fail_str, failed, conn_str, connected);
-		uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
+		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
 	} else if (phase == 2) {
 		size_t connected = 0, connecting = 0, failed = 0;
 		int conns_made = 0;
@@ -174,7 +175,7 @@ void on_tick_cb(uv_timer_t *req)
 			rmsg_str, g_tcp_ctx->recv_msgs, space_str,
 			sbytes_str, g_tcp_ctx->send_bytes, space_str,
 			rbytes_str, g_tcp_ctx->recv_bytes, space_str);
-		uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
+		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
 
 		if (elapsed > (double)cmdline_args.time) {
 			elapsed = 0.0;
@@ -262,10 +263,9 @@ int main(int argc, char **argv)
 	}
 
 	tty_setmode_success = 1;
-
+	g_tty_enabled = 1;
 	if (uv_tty_get_winsize(&g_tty, &g_width, &g_height)) {
-		printf("Could not get TTY information\n");
-		goto cleanup;
+		g_tty_enabled = 0;
 	}
 
 #ifndef _DEBUG
