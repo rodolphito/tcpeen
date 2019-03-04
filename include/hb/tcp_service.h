@@ -3,7 +3,15 @@
 
 #include <stdint.h>
 
+#include "hb/tcp_channel.h"
 #include "hb/endpoint.h"
+#include "hb/buffer.h"
+#include "hb/event.h"
+#include "hb/list.h"
+
+#define HB_SERVICE_MAX_CLIENTS 10000
+#define HB_SERVICE_MAX_READ 65535
+
 
 typedef enum tcp_service_state_e {
 	TCP_SERVICE_NEW, 
@@ -15,16 +23,32 @@ typedef enum tcp_service_state_e {
 	TCP_SERVICE_INVALID,
 } tcp_service_state_t;
 
+typedef struct tcp_service_stats_s {
+	uint64_t recv_count;
+	uint64_t recv_bytes;
+	uint64_t send_count;
+	uint64_t send_bytes;
+} tcp_service_stats_t;
+
 typedef struct tcp_service_s {
 	void *priv;
 	hb_endpoint_t host_listen;
+	tcp_channel_list_t channel_list;
+	hb_buffer_pool_t pool;
+	hb_event_list_t events;
+	hb_mutex_t mtx_io;
+	tcp_service_stats_t stats;
 	uint8_t state;
 } tcp_service_t;
 
 
-int tcp_service_start(const char *ipstr, uint16_t port);
-int tcp_service_stop();
-int tcp_service_update(uintptr_t *evt_base, uint32_t *count);
+int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
+int tcp_service_stop(tcp_service_t *service);
+int tcp_service_lock(tcp_service_t *service);
+int tcp_service_unlock(tcp_service_t *service);
+int tcp_service_update(tcp_service_t *service, uintptr_t *evt_base, uint32_t *count);
 
+int tcp_service_stats_clear(tcp_service_t *service);
+int tcp_service_stats_get(tcp_service_t *service, tcp_service_stats_t *stats);
 
 #endif

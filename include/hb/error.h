@@ -24,6 +24,9 @@
 #define HB_GUARD_BREAK(expr) if ((expr)) break
 #define HB_GUARD_RET_BREAK(expr, ret) if ((ret = (expr))) break
 
+#define HB_GUARD_CLEANUP(expr) HB_GUARD_GOTO(expr, cleanup)
+#define HB_GUARD_NULL_CLEANUP(expr) HB_GUARD_GOTO(!(expr), cleanup)
+
 #ifdef _WIN32
 #	define HB_PLATFORM_WINDOWS 1
 

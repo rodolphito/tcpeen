@@ -3,36 +3,42 @@
 
 #include <stdint.h>
 
+#include "aws/common/byte_order.h"
+#include "aws/common/byte_buf.h"
+
 #include "hb/thread.h"
+#include "hb/list.h"
 
-typedef enum hb_buffer_state_e {
-	HB_BUFFER_FREE,
-	HB_BUFFER_INUSE,
-} hb_buffer_state_t;
+// forwards
+typedef struct hb_buffer_pool_s hb_buffer_pool_t;
 
-typedef struct hb_buffer_meta_s {
-	uint64_t id;
-	uint64_t length;
-	uint64_t capacity;
-	uint8_t state;
-} hb_buffer_meta_t;
 
 typedef struct hb_buffer_s {
-	hb_buffer_meta_t *meta;
-	uint8_t *buf;
+	void *priv;
+	hb_buffer_pool_t *pool;
+	struct aws_byte_buf buf;
+	struct aws_byte_cursor pos;
 } hb_buffer_t;
+
 
 typedef struct hb_buffer_pool_s {
 	uint64_t blocks_inuse;
 	uint64_t bytes_inuse;
 	uint64_t block_size;
 	uint64_t block_count;
-	uint64_t next;
+	hb_buffer_t *buffer_array;
 	uint8_t *allocation;
-	hb_buffer_t *buffer_list;
-	hb_buffer_meta_t *meta_list;
+	hb_list_t buffer_list_free;
 	hb_mutex_t mtx;
 } hb_buffer_pool_t;
+
+
+int hb_buffer_setup(hb_buffer_t *buffer);
+int hb_buffer_add_length(hb_buffer_t *buffer, size_t len);
+int hb_buffer_remaining_length(hb_buffer_t *buffer, size_t *out_remaining);
+int hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *out_write_len);
+int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_read_len);
+int hb_buffer_release(hb_buffer_t *buffer);
 
 
 int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size);
@@ -41,9 +47,8 @@ void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool);
 int hb_buffer_pool_lock(hb_buffer_pool_t *pool);
 int hb_buffer_pool_unlock(hb_buffer_pool_t *pool);
 
-// everything below here requires the buffer pool to be locked
 int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
-void hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t *buffer);
+int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t **buffer);
 
 
 #endif
