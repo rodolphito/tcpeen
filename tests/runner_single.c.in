@@ -2,5 +2,5 @@
 
 int main(void)
 {
-	return @TEST_CASE_NAME@(NULL, NULL);
+	return @TEST_CASE_NAME@(0, NULL);
 }

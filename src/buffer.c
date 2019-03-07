@@ -55,9 +55,9 @@ int hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_release(hb_buffer_t *buffer)
 {
-	HB_GUARD_NULL(buffer);
-	HB_GUARD_NULL(buffer->pool);
-	return hb_buffer_pool_release(buffer->pool, &buffer);
+	assert(buffer);
+	assert(buffer->pool);
+	return hb_buffer_pool_release(buffer->pool, buffer);
 }
 
 
@@ -65,7 +65,7 @@ int hb_buffer_release(hb_buffer_t *buffer)
 int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size)
 {
 	int ret = EINVAL;
-	HB_GUARD_NULL(pool);
+	assert(pool);
 	memset(pool, 0, sizeof(*pool));
 
 	HB_GUARD(hb_mutex_setup(&pool->mtx));
@@ -77,7 +77,7 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 	HB_GUARD_NULL_CLEANUP(pool->buffer_array = HB_MEM_ACQUIRE(block_count * sizeof(*pool->buffer_array)));
 	memset(pool->buffer_array, 0, block_count * sizeof(*pool->buffer_array));
 
-	HB_GUARD_CLEANUP(ret = hb_list_setup(&pool->buffer_list_free, block_count, sizeof(void *)));
+	HB_GUARD_CLEANUP(ret = hb_list_ptr_setup(&pool->buffer_list_free, block_count));
 
 	hb_buffer_t *buffer;
 	for (uint64_t i = 0; i < block_count; i++) {
@@ -88,7 +88,10 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 		buffer->pool = pool;
 		buffer->buf = aws_byte_buf_from_empty_array(buf, block_size);
 		buffer->pos = aws_byte_cursor_from_buf(&buffer->buf);
-		HB_GUARD_CLEANUP(ret = hb_list_push_back(&pool->buffer_list_free, &buffer, NULL));
+
+		assert(&buffer);
+		assert(buffer);
+		HB_GUARD_CLEANUP(ret = hb_list_ptr_push_back(&pool->buffer_list_free, buffer));
 	}
 
 	pool->block_count = block_count;
@@ -100,7 +103,7 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 
 cleanup:
 	hb_mutex_cleanup(&pool->mtx);
-	hb_list_cleanup(&pool->buffer_list_free);
+	hb_list_ptr_cleanup(&pool->buffer_list_free);
 	HB_MEM_RELEASE(pool->buffer_array);
 	HB_MEM_RELEASE(pool->allocation);
 
@@ -116,22 +119,30 @@ void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool)
 	pool->bytes_inuse = 0;
 
 	hb_mutex_cleanup(&pool->mtx);
-	hb_list_cleanup(&pool->buffer_list_free);
+	hb_list_ptr_cleanup(&pool->buffer_list_free);
 	HB_MEM_RELEASE(pool->buffer_array);
 	HB_MEM_RELEASE(pool->allocation);
 }
 
 // --------------------------------------------------------------------------------------------------------------
+void hb_buffer_pool_heap(hb_buffer_pool_t *pool, void **out_heap, uint64_t *out_block_count, uint64_t *out_block_size)
+{
+	*out_heap = pool->allocation;
+	*out_block_count = pool->block_count;
+	*out_block_size = pool->block_size;
+}
+
+// --------------------------------------------------------------------------------------------------------------
 int hb_buffer_pool_lock(hb_buffer_pool_t *pool)
 {
-	HB_GUARD_NULL(pool);
+	assert(pool);
 	return hb_mutex_lock(&pool->mtx);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int hb_buffer_pool_unlock(hb_buffer_pool_t *pool)
 {
-	HB_GUARD_NULL(pool);
+	assert(pool);
 	return hb_mutex_unlock(&pool->mtx);
 }
 
@@ -139,11 +150,11 @@ int hb_buffer_pool_unlock(hb_buffer_pool_t *pool)
 int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 {
 	int ret;
-	HB_GUARD_NULL(pool);
-	HB_GUARD_NULL(out_buffer);
+	assert(pool);
+	assert(out_buffer);
 
-	HB_GUARD(ret = hb_list_pop_back(&pool->buffer_list_free, out_buffer));
-
+	HB_GUARD(ret = hb_list_ptr_pop_back(&pool->buffer_list_free, out_buffer));
+	assert(*out_buffer);
 	pool->blocks_inuse++;
 	pool->bytes_inuse += pool->block_size;
 
@@ -151,12 +162,12 @@ int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t **buffer)
+int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t *buffer)
 {
-	HB_GUARD_NULL(pool);
-	HB_GUARD_NULL(buffer);
+	assert(pool);
+	assert(buffer);
 
-	HB_GUARD(hb_list_push_back(&pool->buffer_list_free, buffer, NULL));
+	HB_GUARD(hb_list_ptr_push_back(&pool->buffer_list_free, buffer));
 
 	pool->blocks_inuse--;
 	pool->bytes_inuse -= pool->block_size;

@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
+# TODO: aws cmake files are not actually 3.0.2 compat
+# fix version or fix use of target_sources for them?
 project(tcpeen LANGUAGES C)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/deps/aws-c-common/cmake ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -10,7 +12,7 @@ enable_testing()
 set(HB_TARGET_LINK_LIBS "")
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+	set(CMAKE_BUILD_TYPE Release)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -73,9 +75,12 @@ set(TCP_LIBRARY_SRCS
 	include/hb/endpoint.h
 	src/uuid.c
 	include/hb/uuid.h
-	src/list_aws.c
-	src/list.c
-	include/hb/list.h
+	src/list_ptr.c
+	include/hb/list_ptr.h
+	src/list_block.c
+	include/hb/list_block.h
+	src/map.c
+	include/hb/map.h
 	src/allocator.c
 	include/hb/allocator.h
 	src/thread.c
@@ -107,16 +112,27 @@ list(APPEND HB_TARGET_LINK_LIBS tcpeen)
 #
 # build test executables
 # TODO: make a cache variable to turn tests on/off
-file(GLOB TESTS_C "tests/*.c")
-file(GLOB TESTS_H "tests/*.h")
-file(GLOB TESTS ${TESTS_H} ${TESTS_C})
+set(HB_TESTS_C
+	"tests/test_buffer.c"
+	"tests/test_endpoint.c"
+	"tests/test_event.c"
+	"tests/test_list_block.c"
+	"tests/test_list_ptr.c"
+	"tests/test_tcp_service.c"
+)
+set(HB_TESTS_H
+	""
+)
+set(TESTS "${HB_TESTS_C} ${HB_TESTS_H}")
 
 add_test_case(test_events)
 add_test_case(test_tcp_service)
 add_test_case(test_buffer_pool)
 add_test_case(test_endpoints)
-add_test_case(test_event_list_create)
-add_test_case(test_event_list_ops)
+add_test_case(test_list_block_create)
+add_test_case(test_list_block_ops)
+add_test_case(test_list_ptr_create)
+add_test_case(test_list_ptr_ops)
 
 generate_test_driver(tcpeen-tests)
 target_link_libraries(tcpeen-tests ${HB_TARGET_LINK_LIBS})
@@ -161,15 +177,15 @@ target_compile_definitions(tcpserv_unity PRIVATE ${HB_TARGET_COMPILE_DEFS})
 # build unity plugin
 include_directories(${CMAKE_SOURCE_DIR}/deps/unity)
 set(TCP_PLUGIN_SRCS
-	src/unity/tcp_unity.c
+	src/unity/tcpeen_unity.c
 )
-add_library(tcp_unity SHARED ${TCP_PLUGIN_SRCS})
-target_link_libraries(tcp_unity ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcp_unity PRIVATE ${HB_TARGET_COMPILE_DEFS})
+add_library(tcpeen_unity SHARED ${TCP_PLUGIN_SRCS})
+target_link_libraries(tcpeen_unity ${HB_TARGET_LINK_LIBS})
+target_compile_definitions(tcpeen_unity PRIVATE ${HB_TARGET_COMPILE_DEFS})
 add_custom_command(
-    TARGET tcp_unity 
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:tcp_unity>
-        ${CMAKE_SOURCE_DIR}/UnityProject/Assets/Plugins/x86_64/$<TARGET_FILE_NAME:tcp_unity>
+	TARGET tcpeen_unity
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy
+		$<TARGET_FILE:tcpeen_unity>
+		${CMAKE_SOURCE_DIR}/UnityProject/Assets/Plugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>
 )

@@ -24,7 +24,6 @@ void tcp_service_io_thread(void *data)
 	priv->uv_prep = NULL;
 	priv->uv_check = NULL;
 
-
 	// if allocations fail it's because we are out of memory
 	ret = UV_ENOMEM;
 	HB_GUARD_NULL_CLEANUP(priv->uv_loop = HB_MEM_ACQUIRE(sizeof(*priv->uv_loop)));
@@ -39,7 +38,7 @@ void tcp_service_io_thread(void *data)
 
 	HB_GUARD_CLEANUP(ret = uv_timer_init(priv->uv_loop, priv->uv_accept_timer));
 	priv->uv_accept_timer->data = service;
-	HB_GUARD_CLEANUP(ret = uv_timer_start(priv->uv_accept_timer, on_timer_cb, 100, 100));
+	HB_GUARD_CLEANUP(ret = uv_timer_start(priv->uv_accept_timer, on_timer_cb, 1, 1));
 
 	HB_GUARD_CLEANUP(ret = uv_prepare_init(priv->uv_loop, priv->uv_prep));
 	priv->uv_prep->data = service;
@@ -60,7 +59,7 @@ void tcp_service_io_thread(void *data)
 
 	// listener is up
 	service->state = TCP_SERVICE_STARTED;
-	HB_GUARD_CLEANUP(ret = uv_run(priv->uv_loop, UV_RUN_DEFAULT));
+	while (ret = uv_run(priv->uv_loop, UV_RUN_NOWAIT));
 
 	if ((ret = uv_loop_close(priv->uv_loop))) {
 		hb_log_warning("Walking handles due to unclean IO loop close");
@@ -84,21 +83,13 @@ cleanup:
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
+int tcp_service_setup(tcp_service_t *service)
 {
 	int ret = UV_EINVAL;
 	HB_GUARD_NULL(service);
 
-	if (service->state != TCP_SERVICE_NEW && service->state != TCP_SERVICE_STOPPED) {
-		return HB_ERROR; // cant start twice
-	}
-	service->state = TCP_SERVICE_STARTING;
-
-	hb_log_trace("tcp service starting");
-
-	ret = UV_ENOMEM;
 	memset(service, 0, sizeof(*service));
-	
+
 	HB_GUARD_NULL(service->priv = HB_MEM_ACQUIRE(sizeof(tcp_service_priv_t)));
 	memset(service->priv, 0, sizeof(tcp_service_priv_t));
 
@@ -106,8 +97,57 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
 
 	HB_GUARD_CLEANUP(ret = tcp_channel_list_setup(&service->channel_list, HB_SERVICE_MAX_CLIENTS));
 
-	HB_GUARD_CLEANUP(ret = hb_buffer_pool_setup(&service->pool, HB_SERVICE_MAX_CLIENTS * 10, HB_SERVICE_MAX_READ));
+	HB_GUARD_CLEANUP(ret = hb_buffer_pool_setup(&service->pool, HB_SERVICE_MAX_CLIENTS * 4, HB_SERVICE_MAX_READ));
 	HB_GUARD_CLEANUP(ret = hb_event_list_setup(&service->events));
+
+	HB_GUARD_NULL_CLEANUP(service->write_req = HB_MEM_ACQUIRE(HB_SERVICE_MAX_CLIENTS * sizeof(*service->write_req)));
+	HB_GUARD_CLEANUP(hb_list_ptr_setup(&service->write_req_free, HB_SERVICE_MAX_CLIENTS * 2));
+	HB_GUARD_CLEANUP(hb_list_ptr_setup(&service->write_req_ready, HB_SERVICE_MAX_CLIENTS * 2));
+
+	tcp_service_write_req_t *write_req;
+	for (uint64_t i = 0; i < HB_SERVICE_MAX_CLIENTS; i++) {
+		write_req = &service->write_req[i];
+		HB_GUARD_CLEANUP(ret = hb_list_ptr_push_back(&service->write_req_free, write_req));
+	}
+
+	return HB_SUCCESS;
+
+cleanup:
+	HB_MEM_RELEASE(service->write_req);
+	HB_MEM_RELEASE(service->priv);
+
+	return HB_ERROR;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+void tcp_service_cleanup(tcp_service_t *service)
+{
+	if (!service) return;
+	if (!service->priv) return;
+
+	hb_mutex_cleanup(&service->mtx_io);
+
+	tcp_channel_list_cleanup(&service->channel_list);
+
+	hb_buffer_pool_cleanup(&service->pool);
+	hb_event_list_cleanup(&service->events);
+
+	hb_list_ptr_cleanup(&service->write_req_ready);
+	hb_list_ptr_cleanup(&service->write_req_free);
+
+	HB_MEM_RELEASE(service->write_req);
+	HB_MEM_RELEASE(service->priv);
+	service->priv = NULL;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
+{
+	int ret;
+	if (service->state != TCP_SERVICE_NEW && service->state != TCP_SERVICE_STOPPED) {
+		return HB_ERROR;  // can't start from here
+	}
+	service->state = TCP_SERVICE_STARTING;
 
 	char ipbuf[255];
 	tcp_service_priv_t *priv = service->priv;
@@ -119,10 +159,6 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
 	return HB_SUCCESS;
 
 cleanup:
-	hb_mutex_cleanup(&service->mtx_io);
-
-	HB_MEM_RELEASE(service->priv);
-
 	return HB_ERROR;
 }
 
@@ -146,16 +182,6 @@ int tcp_service_stop(tcp_service_t *service)
 
 	service->state = TCP_SERVICE_STOPPED;
 
-	hb_mutex_cleanup(&service->mtx_io);
-
-	tcp_channel_list_cleanup(&service->channel_list);
-
-	hb_buffer_pool_cleanup(&service->pool);
-	hb_event_list_cleanup(&service->events);
-
-    HB_MEM_RELEASE(priv);
-    priv = NULL;
-
 	return HB_SUCCESS;
 }
 
@@ -176,13 +202,105 @@ int tcp_service_unlock(tcp_service_t *service)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tcp_service_update(tcp_service_t *service, uintptr_t *evt_base, uint32_t *count)
+int tcp_service_update(tcp_service_t *service, void **out_evt_base, uint64_t *out_count, uint8_t *out_state)
 {
-	HB_GUARD(evt_base);
-	HB_GUARD(count);
+	assert(service);
+	assert(out_evt_base);
+	assert(out_count);
+	assert(out_state);
 
-	evt_base = NULL;
-	*count = 0;
+	*out_evt_base = NULL;
+	*out_count = 0;
+	*out_state = service->state;
+
+	if (service->state == TCP_SERVICE_STARTED) {
+		HB_GUARD(hb_event_list_pop_swap(&service->events, out_evt_base, out_count));
+	}
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_base, uint64_t length)
+{
+	tcp_service_write_req_t *send_req = NULL;
+
+	assert(service);
+	assert(buffer_base);
+
+	tcp_service_priv_t *priv = service->priv;
+	assert(priv);
+
+	tcp_channel_t *channel;
+	HB_GUARD(tcp_channel_list_get(&service->channel_list, client_id, &channel));
+	assert(channel);
+
+	HB_GUARD(channel->state != TCP_CHANNEL_OPEN);
+
+	HB_GUARD(tcp_service_write_req_acquire(service, &send_req));
+	HB_GUARD_NULL(send_req);
+
+	send_req->channel = channel;
+	send_req->buffer = NULL;
+	HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &send_req->buffer));
+	HB_GUARD_NULL_CLEANUP(send_req->buffer);
+	HB_GUARD_CLEANUP(hb_buffer_setup(send_req->buffer));
+
+	uint8_t *bufbase = NULL;
+	size_t buflen = 0;
+	HB_GUARD_CLEANUP(hb_buffer_write_ptr(send_req->buffer, &bufbase, &buflen));
+
+	HB_GUARD_CLEANUP(length >= buflen);
+
+	memcpy(bufbase, buffer_base, length);
+	hb_buffer_add_length(send_req->buffer, length);
+	send_req->uv_buf = uv_buf_init(bufbase, UV_BUFLEN_CAST(length));
+
+	return HB_SUCCESS;
+
+cleanup:
+	if (send_req->buffer && hb_buffer_release(send_req->buffer)) {
+		hb_log_error("Error releasing send req buffer");
+	}
+
+	if (send_req && tcp_service_write_req_release(service, send_req)) {
+		hb_log_error("Error releasing send req");
+	}
+
+	return HB_ERROR;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req)
+{
+	assert(service);
+	assert(out_write_req);
+
+	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_free, out_write_req));
+	//memset(*out_write_req, 0, sizeof(**out_write_req));
+	HB_GUARD(hb_list_ptr_push_back(&service->write_req_ready, *out_write_req));
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_write_req_next(tcp_service_t *service, tcp_service_write_req_t **out_write_req)
+{
+	assert(service);
+	assert(out_write_req);
+
+	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_ready, out_write_req));
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_write_req_release(tcp_service_t *service, tcp_service_write_req_t *write_req)
+{
+	assert(service);
+	assert(write_req);
+
+	HB_GUARD(hb_list_ptr_push_back(&service->write_req_free, write_req));
 
 	return HB_SUCCESS;
 }

@@ -1,10 +1,10 @@
 #include "PluginAPI-2018.3.2f1/IUnityInterface.h"
 
-#include "aws/common/byte_buf.h"
-#include "aws/common/device_random.h"
-
+#include "hb/config.h"
 #include "hb/error.h"
 #include "hb/allocator.h"
+
+#include "hb/tcp_service.h"
 
 // ----------------------------------------------------------------------------------------------------------------------------------
 //void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginLoad(IUnityInterfaces* unityInterfaces)
@@ -16,87 +16,98 @@
 //{
 //}
 
-#define HB_BLOCK_SIZE 512
 
-struct hb_mem_block {
-	uint64_t size;
-	uint64_t len;
-	uint64_t type;
-	uint8_t *buf;
+// TODO: pass back service pointer allowing
+// multiple services to be created in Managed layer
+tcp_service_t tcp_service = {
+	.priv = NULL,
 };
 
-static uint8_t *hb_buffer = NULL;
-static struct hb_mem_block *hb_blocks = NULL;
-int hb_block_count = 8192;
-int hb_block_size = HB_BLOCK_SIZE;
 
-
-
-int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API hb_unity_memtest_alloc()
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_event_heap_acquire(void **out_heap_base, uint64_t *out_block_count, uint64_t *out_block_size)
 {
-	HB_GUARD(hb_blocks);
-	HB_GUARD(hb_buffer);
+	HB_GUARD_NULL(out_heap_base);
+	HB_GUARD_NULL(out_block_count);
+	HB_GUARD_NULL(out_block_size);
 
-	int buffer_len = hb_block_count * hb_block_size;
-	hb_blocks = HB_MEM_ACQUIRE(sizeof(*hb_blocks) * hb_block_count);
-	hb_buffer = HB_MEM_ACQUIRE(hb_block_count * hb_block_size);
+	*out_heap_base = NULL;
+	*out_block_count = 0;
+	*out_block_size = 0;
+
+	HB_GUARD_NULL(tcp_service.priv);
+	hb_event_list_heap(&tcp_service.events, out_heap_base, out_block_count, out_block_size);
+
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_buffer_heap_acquire(void **out_heap_base, uint64_t *out_block_count, uint64_t *out_block_size)
+{
+	HB_GUARD_NULL(out_heap_base);
+	HB_GUARD_NULL(out_block_count);
+	HB_GUARD_NULL(out_block_size);
+
+	*out_heap_base = NULL;
+	*out_block_count = 0;
+	*out_block_size = 0;
+
+	HB_GUARD_NULL(tcp_service.priv);
+	hb_buffer_pool_heap(&tcp_service.pool, out_heap_base, out_block_count, out_block_size);
+
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_setup(uint64_t max_clients)
+{
+	HB_GUARD(tcp_service.priv);
+	HB_GUARD(tcp_service_setup(&tcp_service));
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_cleanup()
+{
+	HB_GUARD_NULL(tcp_service.priv);
+	tcp_service_cleanup(&tcp_service);
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_start(const char *ipstr, uint16_t port)
+{
+	HB_GUARD_NULL(tcp_service.priv);
+	HB_GUARD(tcp_service_start(&tcp_service, ipstr, port));
+
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_stop()
+{
+	HB_GUARD_NULL(tcp_service.priv);
+	HB_GUARD(tcp_service_stop(&tcp_service));
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(void **out_heap_base, uint64_t *out_block_count, uint8_t *out_state)
+{
+	HB_GUARD_NULL(tcp_service.priv);
+	HB_GUARD_NULL(out_heap_base);
+	HB_GUARD_NULL(out_block_count);
+	HB_GUARD_NULL(out_state);
 	
-	struct aws_byte_buf buffer = {
-		.len = buffer_len,
-		.buffer = hb_buffer,
-		.capacity = buffer_len,
-		.allocator = NULL,
-	};
-	HB_GUARD(aws_device_random_buffer(&buffer));
-
-	uint8_t *buf = hb_buffer;
-	for (int i = 0; i < hb_block_count; i++) {
-		hb_blocks[i].size = 512;
-		hb_blocks[i].len = 512;
-		hb_blocks[i].type = 123;
-		hb_blocks[i].buf = buf;
-
-		buf += hb_block_size;
-	}
+	HB_GUARD(tcp_service_lock(&tcp_service));
+	HB_GUARD(tcp_service_update(&tcp_service, out_heap_base, out_block_count, out_state));
+	HB_GUARD(tcp_service_unlock(&tcp_service));
 
 	return HB_SUCCESS;
 }
 
-int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API hb_unity_memtest_randomize()
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_send(uint64_t client_id, void *buffer, uint64_t length)
 {
-	HB_GUARD_NULL(hb_blocks);
-	struct aws_byte_buf buffer = {
-		.len = hb_block_count * hb_block_size,
-		.buffer = hb_buffer,
-		.capacity = hb_block_count * hb_block_size,
-		.allocator = NULL,
-	};
-	HB_GUARD(aws_device_random_buffer(&buffer));
-	return HB_SUCCESS;
-}
+	HB_GUARD_NULL(tcp_service.priv);
+	HB_GUARD_NULL(buffer);
+	HB_GUARD_NULL(length);
 
-int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API hb_unity_memtest_ptr(void **out_blocks, void **out_buffer, int *block_count, int *block_size)
-{
-	HB_GUARD_NULL(hb_blocks);
-	HB_GUARD_NULL(hb_buffer);
-	HB_GUARD_NULL(out_buffer);
-	HB_GUARD_NULL(out_blocks);
-
-	*out_blocks = hb_blocks;
-	*out_buffer = hb_buffer;
-	*block_count = hb_block_count;
-	*block_size = hb_block_size;
-
-	return HB_SUCCESS;
-}
-
-int UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API hb_unity_memtest_dealloc()
-{
-	HB_GUARD(hb_blocks);
-	HB_GUARD(hb_buffer);
-
-	HB_MEM_RELEASE(hb_blocks);
-	HB_MEM_RELEASE(hb_buffer);
+	HB_GUARD(tcp_service_lock(&tcp_service));
+	HB_GUARD(tcp_service_send(&tcp_service, client_id, buffer, length));
+	HB_GUARD(tcp_service_unlock(&tcp_service));
 
 	return HB_SUCCESS;
 }

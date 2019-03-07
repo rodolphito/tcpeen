@@ -28,13 +28,13 @@ typedef enum hb_event_type_e {
 } hb_event_type_t;
 
 // base event
-typedef struct {
+typedef struct hb_event_base_s {
 	HB_EVENT_FIELDS
 	uint8_t pad[HB_EVENT_PAD_SIZE];
 } hb_event_base_t;
 
 // error event
-typedef struct {
+typedef struct hb_event_error_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	int32_t error_code;
@@ -42,7 +42,7 @@ typedef struct {
 } hb_event_error_t;
 
 // client connected
-typedef struct {
+typedef struct hb_event_client_open_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	char host_local[64];
@@ -50,7 +50,7 @@ typedef struct {
 } hb_event_client_open_t;
 
 // client disconnected
-typedef struct {
+typedef struct hb_event_client_close_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	int32_t error_code;
@@ -58,17 +58,20 @@ typedef struct {
 } hb_event_client_close_t;
 
 // client recv bytes
-typedef struct {
+typedef struct hb_event_client_read_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
-	hb_buffer_t *buffer;
+	hb_buffer_t *hb_buffer;
+	uint8_t *buffer;
+	uint64_t length;
 } hb_event_client_read_t;
 
 
 typedef struct hb_event_list_s {
 	void *priv;
-	uint32_t count;
-	uint32_t capacity;
+	uint64_t count_front;
+	uint64_t count_back;
+	uint64_t capacity;
 	hb_event_base_t *event_front;
 	hb_event_base_t *event_back;
 	hb_event_base_t *event[2];
@@ -79,12 +82,13 @@ typedef struct hb_event_list_s {
 
 int hb_event_list_setup(hb_event_list_t *list);
 void hb_event_list_cleanup(hb_event_list_t *list);
+void hb_event_list_heap(hb_event_list_t *list, void **out_heap, uint64_t *out_block_count, uint64_t *out_block_size);
 
 int hb_event_list_lock(hb_event_list_t *list);
 int hb_event_list_unlock(hb_event_list_t *list);
 
 // everything below requires the list to be locked
-int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint32_t *count);
+int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint64_t *count);
 int hb_event_list_push_back(hb_event_list_t *list, void **evt);
 
 #endif

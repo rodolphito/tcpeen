@@ -7,7 +7,7 @@ HB_TEST_CASE_BEGIN(test_event_list)
 	hb_event_list_t event_list;
 	hb_event_base_t *evt;
 	hb_event_client_open_t *evt_open;
-	uint32_t count = 0;
+	uint64_t count = 0;
 
 	uint64_t max_size = HB_EVENT_MAX_SIZE;
 

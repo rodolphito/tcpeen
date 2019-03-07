@@ -21,8 +21,9 @@ typedef struct tcp_service_priv_s {
 typedef struct tcp_service_write_req_s {
 	uv_write_t uv_req;
 	uv_buf_t uv_buf;
-	tcp_service_t *service;
+	tcp_channel_t *channel;
 	hb_buffer_t *buffer;
+	uint64_t id;
 } tcp_service_write_req_t;
 
 void on_close_release_cb(uv_handle_t* handle);

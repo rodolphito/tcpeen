@@ -1,6 +1,6 @@
-#include "hb/list.h"
+#include "hb/list_block.h"
 
-#if (HB_LIST_IMPL == HB_LIST_IMPL_AWS_ARRAY_LIST)
+#if (hb_list_block_IMPL == hb_list_block_IMPL_AWS_ARRAY_LIST)
 
 #include "aws/common/array_list.h"
 
@@ -9,12 +9,12 @@
 
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_setup(hb_list_t *list, size_t capacity, size_t item_size)
+int hb_list_block_setup(hb_list_block_t *list, uint64_t capacity, uint64_t item_size)
 {
 	HB_GUARD_NULL(list);
 	memset(list, 0, sizeof(*list));
 	
-	const size_t priv_size = capacity * sizeof(void *);
+	const uint64_t priv_size = capacity * sizeof(void *);
 	HB_GUARD_NULL_CLEANUP(list->priv_data = HB_MEM_ACQUIRE(priv_size));
 	memset(list->priv_data, 0, priv_size);
 
@@ -35,7 +35,7 @@ cleanup:
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_list_cleanup(hb_list_t *list)
+void hb_list_block_cleanup(hb_list_block_t *list)
 {
 	if (!list) return;
 
@@ -48,10 +48,11 @@ void hb_list_cleanup(hb_list_t *list)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_push_back(hb_list_t *list, void *item, size_t *out_index)
+int hb_list_block_push_back(hb_list_block_t *list, void **item, uint64_t *out_index)
 {
-	HB_GUARD_NULL(list);
-	HB_GUARD_NULL(item);
+	assert(list);
+	assert(item);
+	assert(*item);
 
 	if (out_index) *out_index = aws_array_list_length(list->priv_impl);
 	HB_GUARD(aws_array_list_push_back(list->priv_impl, item));
@@ -60,19 +61,19 @@ int hb_list_push_back(hb_list_t *list, void *item, size_t *out_index)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_pop_back(hb_list_t *list, void *item)
+int hb_list_block_pop_back(hb_list_block_t *list, void **item)
 {
-	HB_GUARD_NULL(list);
-	HB_GUARD_NULL(item);
+	assert(list);
+	assert(item);
 
 	HB_GUARD(aws_array_list_back(list->priv_impl, item));
 	HB_GUARD(aws_array_list_pop_back(list->priv_impl));
-
+	//assert(*item);
 	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_count(hb_list_t *list, size_t *out_count)
+int hb_list_block_count(hb_list_block_t *list, uint64_t *out_count)
 {
 	HB_GUARD_NULL(list);
 	HB_GUARD_NULL(out_count);
@@ -81,7 +82,7 @@ int hb_list_count(hb_list_t *list, size_t *out_count)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_clear(hb_list_t *list)
+int hb_list_block_clear(hb_list_block_t *list)
 {
 	HB_GUARD_NULL(list);
 	aws_array_list_clear(list->priv_impl);
@@ -89,15 +90,15 @@ int hb_list_clear(hb_list_t *list)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_get(hb_list_t *list, size_t index, void **out_item)
+int hb_list_block_get(hb_list_block_t *list, uint64_t index, void **out_item)
 {
 	HB_GUARD_NULL(list);
 	HB_GUARD_NULL(out_item);
-	return aws_array_list_get_at(list->priv_impl, *out_item, index);
+	return aws_array_list_get_at(list->priv_impl, out_item, index);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_remove(hb_list_t *list, size_t index)
+int hb_list_block_remove(hb_list_block_t *list, uint64_t index)
 {
 	HB_GUARD_NULL(list);
 
