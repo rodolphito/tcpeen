@@ -302,19 +302,6 @@ void on_timer_cb(uv_timer_t *handle)
 		return;
 	}
 
-	tcp_channel_t *channel = NULL;
-	tcp_service_write_req_t *send_req = NULL;
-	while (!tcp_service_write_req_next(service, &send_req)) {
-		channel = send_req->channel;
-		assert(channel);
-		assert(channel->priv);
-		if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)channel->priv, &send_req->uv_buf, 1, on_send_cb)) {
-			hb_log_error("IO send failed");
-			hb_log_uv_error(ret);
-			tcp_service_write_req_release(service, send_req);
-		}
-	}
-
 	if (service->state != TCP_SERVICE_STARTED) {
 		if (!uv_is_closing((uv_handle_t *)priv->tcp_handle)) uv_close((uv_handle_t *)priv->tcp_handle, NULL);
 		if (!uv_is_closing((uv_handle_t *)priv->uv_accept_timer)) uv_close((uv_handle_t *)priv->uv_accept_timer, NULL);
@@ -336,6 +323,21 @@ void on_prep_cb(uv_prepare_t *handle)
 	assert(service);
 
 	HB_GUARD_CLEANUP(ret = tcp_service_lock(service));
+
+    tcp_channel_t *channel = NULL;
+	tcp_service_write_req_t *send_req = NULL;
+	while (!tcp_service_write_req_next(service, &send_req)) {
+		channel = send_req->channel;
+        // hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
+		assert(channel);
+		assert(channel->priv);
+		if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)channel->priv, &send_req->uv_buf, 1, on_send_cb)) {
+			hb_log_error("IO send failed");
+			hb_log_uv_error(ret);
+			tcp_service_write_req_release(service, send_req);
+		}
+	}
+
 	return;
 
 cleanup:

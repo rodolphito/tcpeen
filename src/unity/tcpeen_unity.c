@@ -85,7 +85,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_stop()
 	return HB_SUCCESS;
 }
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(void **out_heap_base, uint64_t *out_block_count, uint8_t *out_state)
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(hb_event_base_t **out_heap_base, uint64_t *out_block_count, uint8_t *out_state)
 {
 	HB_GUARD_NULL(tcp_service.priv);
 	HB_GUARD_NULL(out_heap_base);

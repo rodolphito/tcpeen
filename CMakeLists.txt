@@ -120,10 +120,7 @@ set(HB_TESTS_C
 	"tests/test_list_ptr.c"
 	"tests/test_tcp_service.c"
 )
-set(HB_TESTS_H
-	""
-)
-set(TESTS "${HB_TESTS_C} ${HB_TESTS_H}")
+set(TESTS ${HB_TESTS_C})
 
 add_test_case(test_events)
 add_test_case(test_tcp_service)

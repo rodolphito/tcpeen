@@ -46,12 +46,12 @@ HB_TEST_CASE_BEGIN(list_ptr_ops)
 	ASSERT_SUCCESS(hb_list_ptr_remove(&list, 0));
 	ASSERT_TRUE(hb_list_ptr_count(&list) == 1);
 
-	ASSERT_SUCCESS(hb_list_ptr_pop_back(&list, &out));
+	ASSERT_SUCCESS(hb_list_ptr_pop_back(&list, (void **)&out));
 	ASSERT_TRUE(hb_list_ptr_count(&list) == 0);
 	ASSERT_TRUE(out == p1);
 	ASSERT_TRUE(*out == data1);
 
-	ASSERT_FAILS(hb_list_ptr_pop_back(&list, &out));
+	ASSERT_FAILS(hb_list_ptr_pop_back(&list, (void **)&out));
 
 	hb_list_ptr_cleanup(&list);
 

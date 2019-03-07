@@ -56,7 +56,7 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
 int tcp_service_lock(tcp_service_t *service);
 int tcp_service_unlock(tcp_service_t *service);
-int tcp_service_update(tcp_service_t *service, void **out_evt_base, uint64_t *out_count, uint8_t *out_state);
+int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base, uint64_t *out_count, uint8_t *out_state);
 int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_base, uint64_t length);
 
 int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);

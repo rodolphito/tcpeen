@@ -34,11 +34,11 @@ HB_TEST_CASE_BEGIN(list_block_ops)
 	ASSERT_SUCCESS(hb_list_block_count(&list, &count));
 	ASSERT_TRUE(count == 0);
 
-	ASSERT_SUCCESS(hb_list_block_push_back(&list, &p0, &index));
+	ASSERT_SUCCESS(hb_list_block_push_back(&list, (void **)&p0, &index));
 	ASSERT_SUCCESS(hb_list_block_count(&list, &count));
 	ASSERT_TRUE(count == 1);
 
-	ASSERT_SUCCESS(hb_list_block_push_back(&list, &p1, &index));
+	ASSERT_SUCCESS(hb_list_block_push_back(&list, (void **)&p1, &index));
 	ASSERT_SUCCESS(hb_list_block_count(&list, &count));
 	ASSERT_TRUE(count == 2);
 
@@ -46,7 +46,7 @@ HB_TEST_CASE_BEGIN(list_block_ops)
 	ASSERT_SUCCESS(hb_list_block_count(&list, &count));
 	ASSERT_TRUE(count == 1);
 
-	ASSERT_SUCCESS(hb_list_block_pop_back(&list, &out));
+	ASSERT_SUCCESS(hb_list_block_pop_back(&list, (void **)&out));
 	ASSERT_SUCCESS(hb_list_block_count(&list, &count));
 	ASSERT_TRUE(count == 0);
 	ASSERT_TRUE(out == p1);
