@@ -16,7 +16,7 @@ void on_signal_cb(uv_signal_t* handle, int signum)
 
 int main(void)
 {
-    int ret;
+	int ret;
 	tcp_service_t tcp_service = {
 		.priv = NULL,
 		.state = TCP_SERVICE_NEW,
@@ -38,7 +38,7 @@ int main(void)
 		HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
 		ret = tcp_service_update(&tcp_service, &evt_base, &evt_count, &state);
 		//HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
-        //HB_GUARD(ret);
+		//HB_GUARD(ret);
 
 		for (int e = 0; e < evt_count; e++) {
 			switch (evt_base->type) {
@@ -62,14 +62,14 @@ int main(void)
 				hb_buffer_read_be64(evt_read->hb_buffer, &msg_id);
 				// hb_log_debug("msg len: %zu -- id: %zu", evt_read->length, msg_id);
 
-                tcp_channel_t *channel = NULL;
-                if (tcp_channel_list_get(&tcp_service.channel_list, evt_read->client_id, &channel)) break;
-                assert(channel);
+				tcp_channel_t *channel = NULL;
+				if (tcp_channel_list_get(&tcp_service.channel_list, evt_read->client_id, &channel)) break;
+				assert(channel);
 
-                if (msg_id != channel->last_msg_id + 1) {
-                    hb_log_debug("connection: %zu -- msg len: %zu -- expected id: %zu -- recvd id: %zu", evt_read->client_id, evt_read->length, channel->last_msg_id + 1, msg_id);
-                }
-                channel->last_msg_id++;
+				if (msg_id != channel->last_msg_id + 1) {
+					hb_log_debug("connection: %zu -- msg len: %zu -- expected id: %zu -- recvd id: %zu", evt_read->client_id, evt_read->length, channel->last_msg_id + 1, msg_id);
+				}
+				channel->last_msg_id++;
 
 				//evt_read->buffer[evt_read->length] = '\0';
 				//hb_log_warning("%zu bytes -- %s", evt_read->length, (char *)evt_read->buffer + 20);

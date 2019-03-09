@@ -26,7 +26,7 @@ typedef struct uv_buffer_work_req_s {
 // --------------------------------------------------------------------------------------------------------------
 void on_close_handle_cb(uv_handle_t *handle)
 {
-    HB_MEM_RELEASE(handle);
+	HB_MEM_RELEASE(handle);
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	if (!channel->read_buffer) {
 		ret = UV_ENOBUFS;
 		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
-        HB_GUARD_CLEANUP(hb_buffer_setup(channel->read_buffer));
+		HB_GUARD_CLEANUP(hb_buffer_setup(channel->read_buffer));
 	}
 
 	uint8_t *bufbase = NULL;
@@ -254,7 +254,7 @@ cleanup:
 void on_connection_cb(uv_stream_t *server_handle, int status)
 {
 	int ret = UV_EINVAL;
-    int handle_init = 0;
+	int handle_init = 0;
 	uv_tcp_t *client_handle = NULL;
 
 	tcp_service_t *service = server_handle->data;
@@ -269,7 +269,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	ret = UV_ENOMEM;
 	HB_GUARD_NULL_CLEANUP(client_handle = HB_MEM_ACQUIRE(sizeof(*client_handle)));
 	HB_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, client_handle));
-    handle_init = 1;
+	handle_init = 1;
 	HB_GUARD_CLEANUP(ret = uv_accept(server_handle, (uv_stream_t *)client_handle));
 
 	tcp_channel_t *channel = NULL;
@@ -314,12 +314,12 @@ cleanup:
 	hb_log_uv_error(ret);
 
 	if (client_handle) {
-        if (channel) {
-            channel->state = TCP_CHANNEL_CLOSING;
-            uv_close((uv_handle_t *)client_handle, on_close_channel_cb);
-        } else if (handle_init) {
-            uv_close((uv_handle_t *)client_handle, on_close_handle_cb);
-        }
+		if (channel) {
+			channel->state = TCP_CHANNEL_CLOSING;
+			uv_close((uv_handle_t *)client_handle, on_close_channel_cb);
+		} else if (handle_init) {
+			uv_close((uv_handle_t *)client_handle, on_close_handle_cb);
+		}
 	}
 }
 
@@ -359,12 +359,12 @@ void on_prep_cb(uv_prepare_t *handle)
 
 	HB_GUARD_CLEANUP(ret = tcp_service_lock(service));
 
-    tcp_channel_t *channel = NULL;
+	tcp_channel_t *channel = NULL;
 	tcp_service_write_req_t *send_req = NULL;
 	while (tcp_service_write_req_count(service)) {
 		HB_GUARD_CLEANUP(tcp_service_write_req_next(service, &send_req));
 		channel = send_req->channel;
-        // hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
+		// hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
 		assert(channel);
 		assert(channel->priv);
 		if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)channel->priv, &send_req->uv_buf, 1, on_send_cb)) {

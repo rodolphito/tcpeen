@@ -75,7 +75,7 @@ void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 		conn->tstamp_last_msg = cur_ticks;
 		conn->recv_msgs++;
 		conn->recv_bytes += nread;
-        conn->ctx->recv_msgs++;
+		conn->ctx->recv_msgs++;
 		conn->ctx->recv_bytes += nread;
 	} else {
 		hb_log_uv_error((int)nread);
@@ -150,7 +150,7 @@ void on_tcp_write_cb(uv_write_t *req, int status)
 		}
 		conn->send_msgs++;
 		conn->send_bytes += wbuf->len;
-        conn->ctx->send_msgs++;
+		conn->ctx->send_msgs++;
 		conn->ctx->send_bytes += wbuf->len;
 	}
 

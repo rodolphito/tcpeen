@@ -9,10 +9,10 @@
 int hb_buffer_setup(hb_buffer_t *buffer)
 {
 	assert(buffer);
-    buffer->buf.len = 0;
-    buffer->pos.ptr = buffer->buf.buffer;
-    buffer->pos.len = 0;
-    return HB_SUCCESS;
+	buffer->buf.len = 0;
+	buffer->pos.ptr = buffer->buf.buffer;
+	buffer->pos.len = 0;
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ int hb_buffer_set_length(hb_buffer_t *buffer, size_t len)
 size_t hb_buffer_remaining_length(hb_buffer_t *buffer)
 {
 	assert(buffer);
-    return buffer->buf.capacity - buffer->buf.len;
+	return buffer->buf.capacity - buffer->buf.len;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -154,8 +154,8 @@ void hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *o
 	assert(buffer);
 	assert(out_write_ptr);
 	assert(out_write_len);
-    *out_write_ptr = buffer->buf.buffer + buffer->buf.len;
-    *out_write_len = buffer->buf.capacity - buffer->buf.len;
+	*out_write_ptr = buffer->buf.buffer + buffer->buf.len;
+	*out_write_len = buffer->buf.capacity - buffer->buf.len;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -164,8 +164,8 @@ void hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out
 	assert(buffer);
 	assert(out_read_ptr);
 	assert(out_read_len);
-    *out_read_ptr = buffer->pos.ptr;
-    *out_read_len = buffer->buf.len;
+	*out_read_ptr = buffer->pos.ptr;
+	*out_read_len = buffer->buf.len;
 }
 
 // --------------------------------------------------------------------------------------------------------------

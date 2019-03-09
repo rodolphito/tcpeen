@@ -163,7 +163,7 @@ void on_tick_cb(uv_timer_t *req)
 
 			if (do_connect && conns_made < conns_max) {
 				tcp_connect_begin(&g_tcp_conns[i], cmdline_args.host, cmdline_args.port);
-                conns_made++;
+				conns_made++;
 			} else if (do_send) {
 				tcp_write_begin(g_tcp_conns[i].tcp_handle, cmdline_args.message, cmdline_args.msglen, 0);
 			}

@@ -39,7 +39,7 @@ typedef struct tcp_channel_s {
 	int32_t error_code;
 	uint8_t state;
 	uint8_t read_state;
-    uint64_t last_msg_id;
+	uint64_t last_msg_id;
 } tcp_channel_t;
 
 

@@ -10,8 +10,8 @@
 
 #define HB_TEST_CASE_BEGIN(fn) static int fn (HB_TEST_CASE_PARAMS) \
 { \
-    (void)ctx; \
-    (void)allocator; \
+	(void)ctx; \
+	(void)allocator; \
 
 #define HB_TEST_CASE_END }
 
