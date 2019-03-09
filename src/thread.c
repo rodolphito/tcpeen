@@ -1,18 +1,11 @@
 #include "hb/thread.h"
 
 #include "aws/common/thread.h"
-#include "aws/common/clock.h"
-#include "aws/common/mutex.h"
 
 #include "hb/error.h"
 #include "hb/log.h"
 #include "hb/allocator.h"
 
-// --------------------------------------------------------------------------------------------------------------
-uint64_t hb_tstamp_convert(uint64_t tstamp, hb_tstamp_unit_t from, hb_tstamp_unit_t to, uint64_t *remainder)
-{
-	return aws_timestamp_convert(tstamp, from, to, remainder);
-}
 
 // --------------------------------------------------------------------------------------------------------------
 void hb_thread_sleep(uint64_t ns)
@@ -27,27 +20,44 @@ uint64_t hb_thread_id(void)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_mutex_setup(hb_mutex_t *mtx)
+int hb_thread_setup(hb_thread_t *thread)
 {
-	mtx->mtx_impl = HB_MEM_ACQUIRE(sizeof(struct aws_mutex));
-	return aws_mutex_init(mtx->mtx_impl);
+	assert(thread);
+	return aws_thread_init((struct aws_thread *)thread, aws_default_allocator());
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_mutex_lock(hb_mutex_t *mtx)
+int hb_thread_launch(hb_thread_t *thread, void(*func)(void *arg), void *arg)
 {
-	return aws_mutex_lock(mtx->mtx_impl);
+	assert(thread);
+	hb_thread_setup(thread);
+	return aws_thread_launch((struct aws_thread *)thread, func, arg, aws_default_thread_options());
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_mutex_unlock(hb_mutex_t *mtx)
+uint64_t hb_thread_get_id(hb_thread_t *thread)
 {
-	return aws_mutex_unlock(mtx->mtx_impl);
+	assert(thread);
+	return aws_thread_get_id((struct aws_thread *)thread);
+}
+
+
+enum hb_thread_state hb_thread_get_state(hb_thread_t *thread)
+{
+	assert(thread);
+	return (enum hb_thread_state)aws_thread_get_detach_state((struct aws_thread *)thread);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_mutex_cleanup(hb_mutex_t *mtx)
+int hb_thread_join(hb_thread_t *thread)
 {
-	aws_mutex_clean_up(mtx->mtx_impl);
-	HB_MEM_RELEASE(mtx->mtx_impl);
+	assert(thread);
+	return aws_thread_join((struct aws_thread *)thread);
+}
+
+// --------------------------------------------------------------------------------------------------------------
+void hb_thread_cleanup(hb_thread_t *thread)
+{
+	assert(thread);
+	aws_thread_clean_up((struct aws_thread *)thread);
 }

@@ -6,7 +6,7 @@
 #include "aws/common/byte_order.h"
 #include "aws/common/byte_buf.h"
 
-#include "hb/thread.h"
+#include "hb/mutex.h"
 #include "hb/list_ptr.h"
 
 // forwards

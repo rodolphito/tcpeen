@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "hb/thread.h"
+#include "hb/mutex.h"
 #include "hb/endpoint.h"
 
 

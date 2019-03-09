@@ -80,10 +80,10 @@ const char *dropped_str = "Dropped Connections: ";
 void on_tick_cb(uv_timer_t *req)
 {
 	if (!start_ticks) {
-		aws_sys_clock_get_ticks(&start_ticks);
+		start_ticks = hb_tstamp();
 	}
 
-	aws_sys_clock_get_ticks(&current_ticks);
+	current_ticks = hb_tstamp();
 	uint64_t tick_diff = (current_ticks - start_ticks);
 	if (tick_diff < transmit_ticks) {
 		return;

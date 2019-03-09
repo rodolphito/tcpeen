@@ -43,11 +43,10 @@ static void on_tcp_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_
 void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 {
 	int should_close = 0;
-	uint64_t cur_ticks;
+	uint64_t cur_ticks = hb_tstamp();
 	uint64_t latency = 0;
 	uint64_t msg_id = 0;
 	uint32_t msg_len = 0;
-	aws_sys_clock_get_ticks(&cur_ticks);
 
 	tcp_conn_t *conn = (tcp_conn_t *)stream->data;
 
@@ -128,8 +127,7 @@ cleanup:
 void on_tcp_write_cb(uv_write_t *req, int status)
 {
 	int should_close = 0;
-	uint64_t cur_ticks;
-	aws_sys_clock_get_ticks(&cur_ticks);
+	uint64_t cur_ticks = hb_tstamp();
 
 	tcp_write_req_t *write_req = (tcp_write_req_t *)req;
 	tcp_conn_t *conn = req->data;
@@ -172,8 +170,7 @@ void on_tcp_write_cb(uv_write_t *req, int status)
 void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 {
 	int ret;
-	uint64_t cur_ticks;
-	aws_sys_clock_get_ticks(&cur_ticks);
+	uint64_t cur_ticks = hb_tstamp();
 
 	// TODO: return error codes for all of the critical failures below
 	if (!tcp_handle) return;

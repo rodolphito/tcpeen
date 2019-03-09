@@ -75,16 +75,24 @@ set(TCP_LIBRARY_SRCS
 	include/hb/endpoint.h
 	src/uuid.c
 	include/hb/uuid.h
+	src/time.c
+	include/hb/time.h
 	src/list_ptr.c
 	include/hb/list_ptr.h
 	src/list_block.c
 	include/hb/list_block.h
 	src/map.c
 	include/hb/map.h
+	src/queue_spsc.c
+	include/hb/queue_spsc.h
 	src/allocator.c
 	include/hb/allocator.h
 	src/thread.c
 	include/hb/thread.h
+	src/mutex.c
+	include/hb/mutex.h
+	src/atomic.c
+	include/hb/atomic.h
 	src/buffer.c
 	include/hb/buffer.h
 	src/event.c
@@ -119,6 +127,7 @@ set(HB_TESTS_C
 	"tests/test_list_block.c"
 	"tests/test_list_ptr.c"
 	"tests/test_tcp_service.c"
+	"tests/test_queue_spsc.c"
 )
 set(TESTS ${HB_TESTS_C})
 
@@ -130,13 +139,17 @@ add_test_case(test_list_block_create)
 add_test_case(test_list_block_ops)
 add_test_case(test_list_ptr_create)
 add_test_case(test_list_ptr_ops)
+add_test_case(test_queue_spsc_stress)
+add_test_case(test_queue_spsc_empty)
+add_test_case(test_queue_spsc_full)
+add_test_case(test_queue_spsc_npot)
 
 generate_test_driver(tcpeen-tests)
 target_link_libraries(tcpeen-tests ${HB_TARGET_LINK_LIBS})
 target_compile_definitions(tcpeen-tests PRIVATE ${HB_TARGET_COMPILE_DEFS})
 
 # runner for single test for easy debug step through an impl issue
-hb_test_single(test_buffer test_buffer_pool "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
+#hb_test_single(test_queue_spsc test_queue_spsc_full "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
 
 #
 # build tcploadgen executable

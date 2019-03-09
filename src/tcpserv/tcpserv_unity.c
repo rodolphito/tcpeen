@@ -2,6 +2,7 @@
 #include "hb/log.h"
 #include "hb/event.h"
 #include "hb/tcp_service.h"
+#include "hb/queue_spsc.h"
 
 #include "uv.h"
 
