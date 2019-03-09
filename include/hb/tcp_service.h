@@ -61,6 +61,7 @@ int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_ba
 
 int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
 int tcp_service_write_req_next(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
+uint64_t tcp_service_write_req_count(tcp_service_t *service);
 int tcp_service_write_req_release(tcp_service_t *service, tcp_service_write_req_t *write_req);
 
 int tcp_service_stats_clear(tcp_service_t *service);

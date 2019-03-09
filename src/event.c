@@ -84,7 +84,10 @@ int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint64_t *count)
 	for (int i = 0; i < list->count_front; i++) {
 		if (list->event_front[i].type == HB_EVENT_CLIENT_READ) {
 			evt_read = (hb_event_client_read_t *)&list->event_front[i];
-			if (evt_read->hb_buffer) hb_buffer_release(evt_read->hb_buffer);
+			if (evt_read->hb_buffer) {
+				hb_buffer_release(evt_read->hb_buffer);
+				evt_read->hb_buffer = NULL;
+			}
 		}
 	}
 

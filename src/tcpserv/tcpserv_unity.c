@@ -33,12 +33,12 @@ int main(void)
 	int i = 0;
 	while (1) {
 		// emulate 60 fps tick rate on Unity main thread
-		// hb_thread_sleep_ms(16);
+		 //hb_thread_sleep_ms(16);
 
 		HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
 		ret = tcp_service_update(&tcp_service, &evt_base, &evt_count, &state);
-		HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
-        HB_GUARD(ret);
+		//HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
+        //HB_GUARD(ret);
 
 		for (int e = 0; e < evt_count; e++) {
 			switch (evt_base->type) {
@@ -52,18 +52,26 @@ int main(void)
 				//UnityEngine.Debug.LogFormat("Disconnected Event -- ID# {0}", evtClose->client_id);
 				break;
 			case HB_EVENT_CLIENT_READ:
-				{
-					hb_event_client_read_t *evt_read = (hb_event_client_read_t *)evt_base;
-                    // evt_read->buffer[evt_read->length] = '\0';
-                    // hb_log_warning("%zu bytes -- %s", evt_read->length, (char *)evt_read->buffer + 4);
-					HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
-					ret = tcp_service_send(&tcp_service, evt_read->client_id, evt_read->buffer, evt_read->length);
-					HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
-                    // HB_GUARD(ret);
-				}
-			
-				break;
+			{
+				hb_event_client_read_t *evt_read = (hb_event_client_read_t *)evt_base;
+				
+				uint32_t len;
+				uint64_t msg_id;
+				hb_buffer_set_length(evt_read->hb_buffer, evt_read->length);
+				hb_buffer_read_be32(evt_read->hb_buffer, &len);
+				hb_buffer_read_be64(evt_read->hb_buffer, &msg_id);
+				hb_log_debug("msg len: %zu -- id: %zu", evt_read->length, msg_id);
 
+				//evt_read->buffer[evt_read->length] = '\0';
+				//hb_log_warning("%zu bytes -- %s", evt_read->length, (char *)evt_read->buffer + 20);
+				//HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
+				ret = tcp_service_send(&tcp_service, evt_read->client_id, evt_read->buffer, evt_read->length);
+				//HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
+
+				break;
+			}
+			default:
+				break;
 			}
 
 			evt_base++;
@@ -74,6 +82,8 @@ int main(void)
 			hb_log_error("Exiting service loop");
 			break;
 		}
+
+		HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
 	}
 
 	HB_GUARD(tcp_service_stop(&tcp_service));

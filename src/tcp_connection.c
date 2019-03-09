@@ -1,11 +1,11 @@
 #include "hb/tcp_connection.h"
 
 #include "aws/common/byte_buf.h"
+#include "aws/common/clock.h"
 
 #include "hb/error.h"
 #include "hb/allocator.h"
 #include "hb/log.h"
-
 
 
 // lib uv async callbacks
@@ -43,16 +43,42 @@ static void on_tcp_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_
 void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 {
 	int should_close = 0;
+	uint64_t cur_ticks;
+	uint64_t latency = 0;
+	uint64_t msg_id = 0;
+	uint32_t msg_len = 0;
+	aws_sys_clock_get_ticks(&cur_ticks);
 
 	tcp_conn_t *conn = (tcp_conn_t *)stream->data;
 
 	// TODO: determine if 0 bytes is a graceful close which is usually standard
 	if (nread >= 0) {
+		struct aws_byte_cursor bc = aws_byte_cursor_from_array(buf->base, nread);
+		aws_byte_cursor_read_be32(&bc, &msg_len);
+		aws_byte_cursor_read_be64(&bc, &msg_id);
+		aws_byte_cursor_read_be64(&bc, &latency);
+
+		latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
+
+		//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
+		if (msg_id != conn->ctx->last_recv_msg_id + 1) {
+			hb_log_error("len: %zd -- expected id: %zu but recvd id: %zu", nread, msg_id, conn->ctx->last_recv_msg_id);
+			//should_close = 1;
+		}
+		conn->ctx->last_recv_msg_id++;
+
+		conn->ctx->latency_total += latency;
+		if (latency > conn->ctx->latency_max) {
+			conn->ctx->latency_max = latency;
+		}
+
+		conn->ctx->tstamp_last_msg = cur_ticks;
 		conn->ctx->recv_msgs++;
 		conn->ctx->recv_bytes += nread;
 	} else {
 		hb_log_uv_error((int)nread);
 		should_close = 1;
+		conn->read_err = (int)nread;
 	}
 
 	HB_MEM_RELEASE(buf->base);
@@ -100,6 +126,9 @@ cleanup:
 void on_tcp_write_cb(uv_write_t *req, int status)
 {
 	int should_close = 0;
+	uint64_t cur_ticks;
+	aws_sys_clock_get_ticks(&cur_ticks);
+
 	tcp_write_req_t *write_req = (tcp_write_req_t *)req;
 	tcp_conn_t *conn = req->data;
 	uv_buf_t *wbuf = &write_req->buf;
@@ -109,10 +138,14 @@ void on_tcp_write_cb(uv_write_t *req, int status)
 #endif
 
 	if (status) {
-		hb_log_uv_error(status);
+		//hb_log_uv_error(status);
 		should_close = 1;
+		conn->write_err = status;
 	} else if (!wbuf->len) {
 	} else {
+		if (!conn->ctx->tstamp_first_msg) {
+			conn->ctx->tstamp_first_msg = cur_ticks;
+		}
 		conn->ctx->send_msgs++;
 		conn->ctx->send_bytes += wbuf->len;
 	}
@@ -135,6 +168,9 @@ void on_tcp_write_cb(uv_write_t *req, int status)
 void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 {
 	int ret;
+	uint64_t cur_ticks;
+	aws_sys_clock_get_ticks(&cur_ticks);
+
 	// TODO: return error codes for all of the critical failures below
 	if (!tcp_handle) return;
 	if (!tcp_handle->data) return;
@@ -147,10 +183,11 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 	} else if (conn->state != CS_CONNECTED) {
 		return;
 	}
+	conn->ctx->current_msg_id++;
 
 	// max we could prepend would be 8 bytes for 64 bit int
 	struct aws_byte_buf bb_data;
-	if (aws_byte_buf_init(&bb_data, &hb_aws_default_allocator, len + 8) != AWS_OP_SUCCESS) {
+	if (aws_byte_buf_init(&bb_data, &hb_aws_default_allocator, len + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t)) != AWS_OP_SUCCESS) {
 		hb_log_error("aws_byte_buf_init failed");
 		return;
 	}
@@ -161,43 +198,23 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 		return;
 	}
 
-	// TODO: remove all prefixing and pass the responsibility to a higher level
-	//if (cmdline_args.prefix == 8) {
-	//	if (len <= UCHAR_MAX) {
-	//		if (!aws_byte_buf_write_u8(&bb_data, (uint8_t)len)) {
-	//			PRINTERR("aws_byte_buf_write_u8 failed");
-	//		}
-	//	} else {
-	//		cmdline_args.prefix *= 2;
-	//	}
-	//}
-	//if (cmdline_args.prefix == 16) {
-	//	if (len <= USHRT_MAX) {
-	//		if (!aws_byte_buf_write_be16(&bb_data, (uint16_t)len)) {
-	//			PRINTERR("aws_byte_buf_write_be16 failed");
-	//		}
-	//	} else {
-	//		cmdline_args.prefix *= 2;
-	//	}
-	//}
-	//if (cmdline_args.prefix == 32) {
-	//	if (len <= UINT_MAX) {
-	//		if (!aws_byte_buf_write_be32(&bb_data, (uint32_t)len)) {
-	//			PRINTERR("aws_byte_buf_write_be32 failed");
-	//		}
-	//	} else {
-	//		cmdline_args.prefix *= 2;
-	//	}
-	//}
-	//if (cmdline_args.prefix == 64) {
-	//	if (!aws_byte_buf_write_be64(&bb_data, (uint64_t)len)) {
-	//		PRINTERR("aws_byte_buf_write_be64 failed");
-	//	}
-	//}
+	// msg id
+	if (!aws_byte_buf_write_be64(&bb_data, conn->ctx->current_msg_id)) {
+		hb_log_error("aws_byte_buf_write_be64 failed");
+		return;
+	}
+
+	// timestamp
+	if (!aws_byte_buf_write_be64(&bb_data, cur_ticks)) {
+		hb_log_error("aws_byte_buf_write_be64 failed");
+		return;
+	}
 
 	if (!aws_byte_buf_write(&bb_data, (uint8_t *)data, len)) {
 		hb_log_error("aws_byte_buf_write failed");
 	}
+
+	hb_log_trace("sending: %d -> %zu -- %zu -- %zu\n", len, bb_data.len, conn->ctx->current_msg_id, cur_ticks);
 
 	tcp_write_req_t *write_req = HB_MEM_ACQUIRE(sizeof(*write_req));
 	if (!write_req) {

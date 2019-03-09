@@ -34,6 +34,7 @@ void on_close_release_cb(uv_handle_t *handle)
 
 	if (channel->read_buffer) {
 		hb_buffer_release(channel->read_buffer);
+		channel->read_buffer = NULL;
 	}
 
 	hb_event_client_close_t *evt;
@@ -65,7 +66,7 @@ void on_send_cb(uv_write_t *req, int status)
 	if (write_req->buffer && hb_buffer_release(write_req->buffer)) {
 		hb_log_error("Error releasing send req buffer");
 	}
-
+	write_req->buffer = NULL;
 	
 	if (write_req && tcp_service_write_req_release(write_req->channel->service, write_req)) {
 		hb_log_error("Error releasing send req");
@@ -77,6 +78,8 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
 	int ret;
 	tcp_channel_t *channel = handle->data;
+	assert(channel);
+
 	if (!channel->read_buffer) {
 		ret = UV_ENOBUFS;
 		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
@@ -86,7 +89,7 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	uint8_t *bufbase = NULL;
 	size_t buflen = 0;
 	ret = UV_E2BIG;
-	HB_GUARD_CLEANUP(hb_buffer_write_ptr(channel->read_buffer, &bufbase, &buflen));
+	hb_buffer_write_ptr(channel->read_buffer, &bufbase, &buflen);
 
 	buf->base = bufbase;
 	buf->len = UV_BUFLEN_CAST(buflen);
@@ -94,7 +97,8 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	return;
 
 cleanup:
-    hb_log_uv_error(ret);
+	channel->error_code = ret;
+
 	if (channel->read_buffer) {
 		hb_buffer_release(channel->read_buffer);
 		channel->read_buffer = NULL;
@@ -140,7 +144,7 @@ void on_task_process_cb(uv_work_t *req)
 
 	uint8_t *buf = NULL;
 	size_t len = 0;
-	HB_GUARD_CLEANUP(hb_buffer_read_ptr(work_req->hb_buffer, &buf, &len));
+	hb_buffer_read_ptr(work_req->hb_buffer, &buf, &len);
 	send_req->uv_buf = uv_buf_init(buf, UV_BUFLEN_CAST(len));
 	send_req->buffer = work_req->hb_buffer;
 	req->data = send_req;
@@ -164,16 +168,28 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	assert(channel);
 
 	if (nread < 0) { // nread an error when < 0
+		ret = (int)nread;
+		int closechan = 0;
+
 		switch (nread) {
+		case UV_ENOBUFS: // no available buffer space
+			closechan = 0;
 		case UV_ECONNRESET: // connection reset by peer
 		case UV_EOF: // EOF in TCP means the peer disconnected gracefully
+			closechan = 1;
 			break;
 		default:
+			closechan = 1;
 			hb_log_uv_error((int)nread);
 			break;
 		}
 
-		goto close;
+		//if (channel->error_code != ret) {
+		//	channel->error_code = ret;
+		//	hb_log_error("channel error: id: %zu -- code: %d -- %s -- %s", channel->id, channel->error_code, uv_err_name(channel->error_code), uv_strerror(channel->error_code));
+		//}
+
+		if (closechan) goto close;
 	} else if (nread == 0 || !buf) {
 		// this isn't an error, its an empty packet or other non error event with nothing to read
 		goto cleanup;
@@ -181,7 +197,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 
 	recv_msgs++;
 	recv_bytes += nread;
-	HB_GUARD_CLEANUP(hb_buffer_add_length(channel->read_buffer, nread));
+	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
 	hb_event_client_read_t *evt;
 	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, &evt));
@@ -190,6 +206,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	evt->hb_buffer = channel->read_buffer;
 	hb_buffer_read_ptr(evt->hb_buffer, &evt->buffer, &evt->length);
 
+	//HB_GUARD_CLEANUP(hb_buffer_release(channel->read_buffer));
 	channel->read_buffer = NULL;
 
 	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
@@ -214,6 +231,11 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	return;
 
 close:
+	if (channel->read_buffer && hb_buffer_release(channel->read_buffer)) {
+		hb_log_error("failed to release buffer on closing channel: %zu", channel->id);
+	}
+	channel->read_buffer = NULL;
+
 	if (!uv_is_closing((uv_handle_t *)handle)) {
 		channel->state = TCP_CHANNEL_CLOSING;
 		uv_close((uv_handle_t *)handle, on_close_release_cb);
@@ -302,6 +324,8 @@ void on_timer_cb(uv_timer_t *handle)
 		return;
 	}
 
+	hb_log_debug("buffer pool: %zu -- %zu", service->pool.blocks_inuse, service->pool.blocks_inuse);
+
 	if (service->state != TCP_SERVICE_STARTED) {
 		if (!uv_is_closing((uv_handle_t *)priv->tcp_handle)) uv_close((uv_handle_t *)priv->tcp_handle, NULL);
 		if (!uv_is_closing((uv_handle_t *)priv->uv_accept_timer)) uv_close((uv_handle_t *)priv->uv_accept_timer, NULL);
@@ -326,7 +350,8 @@ void on_prep_cb(uv_prepare_t *handle)
 
     tcp_channel_t *channel = NULL;
 	tcp_service_write_req_t *send_req = NULL;
-	while (!tcp_service_write_req_next(service, &send_req)) {
+	while (tcp_service_write_req_count(service)) {
+		HB_GUARD_CLEANUP(tcp_service_write_req_next(service, &send_req));
 		channel = send_req->channel;
         // hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
 		assert(channel);

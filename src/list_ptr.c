@@ -30,7 +30,7 @@ int hb_list_ptr_push_back(hb_list_ptr_t *list, void *item)
 	assert(list);
 	assert(list->data);
 	assert(item);
-
+	assert(list->index < list->capacity);
 	HB_GUARD(list->index >= list->capacity);
 	list->data[list->index++] = (uintptr_t)item;
 

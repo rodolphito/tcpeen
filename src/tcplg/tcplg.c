@@ -184,7 +184,7 @@ void on_tick_cb(uv_timer_t *req)
 			printf("\n\nWaiting for last messages =====================================\n");
 		}
 	} else if (phase == 3) {
-		if (elapsed > 10.0) {
+		if (elapsed > 4.0) {
 			for (int i = 0; i < g_num_conns; i++) {
 				tcp_conn_disconnect(&g_tcp_conns[i]);
 			}
@@ -196,6 +196,23 @@ void on_tick_cb(uv_timer_t *req)
 			printf("Msgs recv: %zu / Msgs send: %zu\n", g_tcp_ctx->recv_msgs, g_tcp_ctx->send_msgs);
 			printf("Bytes recv: %zu / Bytes send: %zu\n", g_tcp_ctx->recv_bytes, g_tcp_ctx->send_bytes);
 			printf("\n");
+			printf("\n");
+
+			uint64_t latency_max = 0;
+			uint64_t latency_total = 0;
+			uint64_t latency_avg = 0;
+			uint64_t msgs_total = 0;
+			for (int i = 0; i < g_num_conns; i++) {
+				if (g_tcp_conns[i].ctx->latency_max > latency_max) {
+					latency_max = g_tcp_conns[i].ctx->latency_max;
+				}
+				latency_total += g_tcp_conns[i].ctx->latency_total;
+				msgs_total += g_tcp_conns[i].ctx->recv_msgs;
+			}
+			latency_avg = latency_total / msgs_total;
+
+			printf("worse latency: %zu", latency_max);
+			printf("average latency: %zu", latency_avg);
 		}
 	} else if (phase == 4) {
 		g_appstate++;
@@ -263,7 +280,7 @@ int main(int argc, char **argv)
 	}
 
 	tty_setmode_success = 1;
-	g_tty_enabled = 1;
+	g_tty_enabled = 0;
 	if (uv_tty_get_winsize(&g_tty, &g_width, &g_height)) {
 		g_tty_enabled = 0;
 	}
@@ -275,7 +292,7 @@ int main(int argc, char **argv)
 	}
 #else
 	cmdline_args.clients = 1;
-	cmdline_args.rate = 0;
+	cmdline_args.rate = 1;
 	cmdline_args.message = "I love eating potatoes :D";
 	cmdline_args.msglen = (int)strlen(cmdline_args.message);
 	cmdline_args.prefix = 32;
