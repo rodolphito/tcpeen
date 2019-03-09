@@ -15,17 +15,10 @@
 
 #define HB_ASSERT(expr) assert(expr)
 #define HB_GUARD(expr) if ((expr)) return HB_ERROR
-#define HB_GUARD_LOG(expr, errstr) if ((expr)) { hb_log_error(errstr); return HB_ERROR; }
-#define HB_GUARD_PTR(expr) if (!(expr)) return HB_ERROR
-#define HB_GUARD_NULL(expr) HB_GUARD_PTR(expr)
-#define HB_GUARD_RET(expr, ret) { if ((ret = (expr))) return ret; }
-#define HB_GUARD_GOTO(expr, lbl) { if ((expr)) goto lbl; }
-#define HB_GUARD_RET_GOTO(expr, ret, lbl) if ((ret = (expr))) goto lbl; }
-#define HB_GUARD_BREAK(expr) if ((expr)) break
-#define HB_GUARD_RET_BREAK(expr, ret) if ((ret = (expr))) break
-
-#define HB_GUARD_CLEANUP(expr) HB_GUARD_GOTO(expr, cleanup)
-#define HB_GUARD_NULL_CLEANUP(expr) HB_GUARD_GOTO(!(expr), cleanup)
+#define HB_GUARD_NULL(expr) if (!(expr)) return HB_ERROR
+#define HB_GUARD_GOTO(lbl, expr) { if ((expr)) goto lbl; }
+#define HB_GUARD_CLEANUP(expr) HB_GUARD_GOTO(cleanup, expr)
+#define HB_GUARD_NULL_CLEANUP(expr) HB_GUARD_GOTO(cleanup, !(expr))
 
 #ifdef _WIN32
 #	define HB_PLATFORM_WINDOWS 1

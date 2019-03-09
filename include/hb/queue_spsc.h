@@ -29,8 +29,9 @@ typedef struct hb_queue_spsc_s {
 } hb_queue_spsc_t;
 
 
-int hb_queue_spsc_setup(hb_queue_spsc_t *q, size_t capacity);
+int hb_queue_spsc_setup(hb_queue_spsc_t *q, uint64_t capacity);
 void hb_queue_spsc_cleanup(hb_queue_spsc_t *q);
+uint64_t hb_queue_spsc_capacity(hb_queue_spsc_t *q);
 int hb_queue_spsc_push(hb_queue_spsc_t *q, void *ptr);
 int hb_queue_spsc_pop(hb_queue_spsc_t *q, void **out_ptr);
 int hb_queue_spsc_pop_multi(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_count);

@@ -95,6 +95,8 @@ set(TCP_LIBRARY_SRCS
 	include/hb/atomic.h
 	src/buffer.c
 	include/hb/buffer.h
+	src/buffer_pool.c
+	include/hb/buffer_pool.h
 	src/event.c
 	include/hb/event.h
 	src/tcp_connection.c

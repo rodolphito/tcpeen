@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "hb/mutex.h"
+#include "hb/queue_spsc.h"
 #include "hb/endpoint.h"
 
 
@@ -37,8 +37,9 @@ typedef struct hb_event_base_s {
 typedef struct hb_event_error_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
+	hb_buffer_t *hb_buffer;
 	int32_t error_code;
-	char error_string[HB_EVENT_PAD_SIZE - sizeof(uint64_t) - sizeof(int32_t)];
+	char error_string[HB_EVENT_PAD_SIZE - sizeof(uint64_t) - sizeof(hb_buffer_t *) - sizeof(int32_t)];
 } hb_event_error_t;
 
 // client connected
@@ -53,8 +54,9 @@ typedef struct hb_event_client_open_s {
 typedef struct hb_event_client_close_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
+	hb_buffer_t *hb_buffer;
 	int32_t error_code;
-	char error_string[HB_EVENT_PAD_SIZE - sizeof(uint64_t) - sizeof(int32_t)];
+	char error_string[HB_EVENT_PAD_SIZE - sizeof(uint64_t) - sizeof(hb_buffer_t *) - sizeof(int32_t)];
 } hb_event_client_close_t;
 
 // client recv bytes
@@ -62,33 +64,30 @@ typedef struct hb_event_client_read_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	hb_buffer_t *hb_buffer;
-	uint8_t *buffer;
-	uint64_t length;
+	uint8_t *msg_ptr[10];
 } hb_event_client_read_t;
 
 
 typedef struct hb_event_list_s {
-	void *priv;
-	uint64_t count_front;
-	uint64_t count_back;
+	hb_event_base_t *hb_events;
+	hb_queue_spsc_t hb_events_free;
+	hb_queue_spsc_t hb_events_ready;
 	uint64_t capacity;
-	hb_event_base_t *event_front;
-	hb_event_base_t *event_back;
-	hb_event_base_t *event[2];
-	hb_mutex_t mtx;
-	uint8_t swap;
 } hb_event_list_t;
 
 
-int hb_event_list_setup(hb_event_list_t *list);
+int hb_event_list_setup(hb_event_list_t *list, uint64_t capacity);
 void hb_event_list_cleanup(hb_event_list_t *list);
-void hb_event_list_heap(hb_event_list_t *list, hb_event_base_t **out_heap, uint64_t *out_block_count, uint64_t *out_block_size);
 
-int hb_event_list_lock(hb_event_list_t *list);
-int hb_event_list_unlock(hb_event_list_t *list);
+int hb_event_list_free_pop(hb_event_list_t *list, hb_event_base_t **out_evt);
+int hb_event_list_free_pop_error(hb_event_list_t *list, hb_event_error_t **out_evt);
+int hb_event_list_free_pop_open(hb_event_list_t *list, hb_event_client_open_t **out_evt);
+int hb_event_list_free_pop_close(hb_event_list_t *list, hb_event_client_close_t **out_evt);
+int hb_event_list_free_pop_read(hb_event_list_t *list, hb_event_client_read_t **out_evt);
+int hb_event_list_ready_push(hb_event_list_t *list, void *out_evt);
 
-// everything below requires the list to be locked
-int hb_event_list_pop_swap(hb_event_list_t *list, hb_event_base_t **evt, uint64_t *count);
-int hb_event_list_push_back(hb_event_list_t *list, hb_event_base_t **evt);
+int hb_event_list_ready_pop(hb_event_list_t *list, hb_event_base_t **out_evt);
+int hb_event_list_ready_pop_all(hb_event_list_t *list, hb_event_base_t **out_evt, uint64_t *out_count);
+int hb_event_list_free_push(hb_event_list_t *list, void *evt);
 
 #endif

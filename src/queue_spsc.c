@@ -14,8 +14,17 @@ int hb_queue_spsc_setup(hb_queue_spsc_t *q, size_t capacity)
 	assert(q);
 	assert(capacity > 0);
 
-	//if (!((capacity != 0) && ((capacity & (~capacity + 1)) == capacity) && (capacity <= (UINT64_MAX >> 3) + 1))) return EINVAL;
-	if (!capacity || (capacity & (capacity - 1))) return HB_ERROR_INVAL;
+	if (capacity & (capacity - 1)) {
+		capacity--;
+		capacity |= capacity >> 1;
+		capacity |= capacity >> 2;
+		capacity |= capacity >> 4;
+		capacity |= capacity >> 8;
+		capacity |= capacity >> 16;
+		capacity |= capacity >> 32;
+		capacity++;
+	}
+	assert(capacity & (capacity - 1));
 
 	int ret = HB_ERROR_NOMEM;
 	q->buffer = NULL;
@@ -39,6 +48,13 @@ void hb_queue_spsc_cleanup(hb_queue_spsc_t *q)
 {
 	assert(q);
 	HB_MEM_RELEASE(q->buffer);
+}
+
+// --------------------------------------------------------------------------------------------------------------
+uint64_t hb_queue_spsc_capacity(hb_queue_spsc_t *q)
+{
+	assert(q);
+	return q->capacity;
 }
 
 // --------------------------------------------------------------------------------------------------------------

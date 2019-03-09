@@ -15,9 +15,7 @@ HB_TEST_CASE_BEGIN(test_service)
 	ASSERT_SUCCESS(tcp_service_start(&tcp_service, "0.0.0.0", 3456));
 
 	hb_thread_sleep_s(1);
-	ASSERT_SUCCESS(tcp_service_lock(&tcp_service));
 	ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
-	ASSERT_SUCCESS(tcp_service_unlock(&tcp_service));
 	
 	ASSERT_SUCCESS(tcp_service_stop(&tcp_service));
 	tcp_service_cleanup(&tcp_service);
@@ -27,9 +25,7 @@ HB_TEST_CASE_BEGIN(test_service)
 	ASSERT_SUCCESS(tcp_service_start(&tcp_service, "0.0.0.0", 3456));
 
 	hb_thread_sleep_s(1);
-	ASSERT_SUCCESS(tcp_service_lock(&tcp_service));
 	ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
-	ASSERT_SUCCESS(tcp_service_unlock(&tcp_service));
 
 	ASSERT_SUCCESS(tcp_service_stop(&tcp_service));
 	tcp_service_cleanup(&tcp_service);

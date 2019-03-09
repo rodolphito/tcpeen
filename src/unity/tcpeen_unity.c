@@ -24,38 +24,6 @@ tcp_service_t tcp_service = {
 };
 
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_event_heap_acquire(void **out_heap_base, uint64_t *out_block_count, uint64_t *out_block_size)
-{
-	HB_GUARD_NULL(out_heap_base);
-	HB_GUARD_NULL(out_block_count);
-	HB_GUARD_NULL(out_block_size);
-
-	*out_heap_base = NULL;
-	*out_block_count = 0;
-	*out_block_size = 0;
-
-	HB_GUARD_NULL(tcp_service.priv);
-	hb_event_list_heap(&tcp_service.events, (hb_event_base_t **)out_heap_base, out_block_count, out_block_size);
-
-	return HB_SUCCESS;
-}
-
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_buffer_heap_acquire(void **out_heap_base, uint64_t *out_block_count, uint64_t *out_block_size)
-{
-	HB_GUARD_NULL(out_heap_base);
-	HB_GUARD_NULL(out_block_count);
-	HB_GUARD_NULL(out_block_size);
-
-	*out_heap_base = NULL;
-	*out_block_count = 0;
-	*out_block_size = 0;
-
-	HB_GUARD_NULL(tcp_service.priv);
-	hb_buffer_pool_heap(&tcp_service.pool, out_heap_base, out_block_count, out_block_size);
-
-	return HB_SUCCESS;
-}
-
 int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_setup(uint64_t max_clients)
 {
 	HB_GUARD(tcp_service.priv);
@@ -92,9 +60,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(hb_even
 	HB_GUARD_NULL(out_block_count);
 	HB_GUARD_NULL(out_state);
 	
-	HB_GUARD(tcp_service_lock(&tcp_service));
 	HB_GUARD(tcp_service_update(&tcp_service, out_heap_base, out_block_count, out_state));
-	HB_GUARD(tcp_service_unlock(&tcp_service));
 
 	return HB_SUCCESS;
 }
@@ -105,9 +71,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_send(uint64_t 
 	HB_GUARD_NULL(buffer);
 	HB_GUARD_NULL(length);
 
-	HB_GUARD(tcp_service_lock(&tcp_service));
 	HB_GUARD(tcp_service_send(&tcp_service, client_id, buffer, length));
-	HB_GUARD(tcp_service_unlock(&tcp_service));
 
 	return HB_SUCCESS;
 }

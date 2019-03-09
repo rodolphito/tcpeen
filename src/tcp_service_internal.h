@@ -10,7 +10,6 @@
 
 // priv tcp service impl
 typedef struct tcp_service_priv_s {
-	uv_thread_t uv_thread;
 	uv_loop_t *uv_loop;
 	uv_tcp_t *tcp_handle;
 	uv_timer_t *uv_accept_timer;

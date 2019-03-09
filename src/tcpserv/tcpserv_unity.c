@@ -36,10 +36,7 @@ int main(void)
 		// emulate 60 fps tick rate on Unity main thread
 		 //hb_thread_sleep_ms(16);
 
-		HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
 		ret = tcp_service_update(&tcp_service, &evt_base, &evt_count, &state);
-		//HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
-		//HB_GUARD(ret);
 
 		for (int e = 0; e < evt_count; e++) {
 			switch (evt_base->type) {
@@ -58,7 +55,7 @@ int main(void)
 				
 				uint32_t len;
 				uint64_t msg_id;
-				hb_buffer_set_length(evt_read->hb_buffer, evt_read->length);
+				//hb_buffer_set_length(evt_read->hb_buffer, evt_read->length);
 				hb_buffer_read_be32(evt_read->hb_buffer, &len);
 				hb_buffer_read_be64(evt_read->hb_buffer, &msg_id);
 				// hb_log_debug("msg len: %zu -- id: %zu", evt_read->length, msg_id);
@@ -68,15 +65,13 @@ int main(void)
 				assert(channel);
 
 				if (msg_id != channel->last_msg_id + 1) {
-					hb_log_debug("connection: %zu -- msg len: %zu -- expected id: %zu -- recvd id: %zu", evt_read->client_id, evt_read->length, channel->last_msg_id + 1, msg_id);
+					hb_log_debug("connection: %zu -- msg len: %zu -- expected id: %zu -- recvd id: %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), channel->last_msg_id + 1, msg_id);
 				}
 				channel->last_msg_id++;
 
 				//evt_read->buffer[evt_read->length] = '\0';
 				//hb_log_warning("%zu bytes -- %s", evt_read->length, (char *)evt_read->buffer + 20);
-				//HB_GUARD_CLEANUP(tcp_service_lock(&tcp_service));
-				tcp_service_send(&tcp_service, evt_read->client_id, evt_read->buffer, evt_read->length);
-				//HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
+				//tcp_service_send(&tcp_service, evt_read->client_id, evt_read->buffer, evt_read->length);
 
 				break;
 			}

@@ -43,8 +43,8 @@ void on_close_channel_cb(uv_handle_t *handle)
 	}
 
 	hb_event_client_close_t *evt;
-	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, (hb_event_base_t **)&evt));
-	evt->type = HB_EVENT_CLIENT_CLOSE;
+	HB_GUARD_CLEANUP(hb_event_list_free_pop_close(&channel->service->events, &evt));
+	;
 	evt->client_id = channel->id;
 	evt->error_code = 0;
 
@@ -88,7 +88,6 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	if (!channel->read_buffer) {
 		ret = UV_ENOBUFS;
 		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
-		HB_GUARD_CLEANUP(hb_buffer_setup(channel->read_buffer));
 	}
 
 	uint8_t *bufbase = NULL;
@@ -205,13 +204,10 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
 	hb_event_client_read_t *evt;
-	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, (hb_event_base_t **)&evt));
+	HB_GUARD_CLEANUP(hb_event_ready_push(&channel->service->events, (hb_event_base_t **)&evt));
 	evt->type = HB_EVENT_CLIENT_READ;
 	evt->client_id = channel->id;
 	evt->hb_buffer = channel->read_buffer;
-	hb_buffer_read_ptr(evt->hb_buffer, &evt->buffer, &evt->length);
-
-	//HB_GUARD_CLEANUP(hb_buffer_release(channel->read_buffer));
 	channel->read_buffer = NULL;
 
 	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
@@ -299,7 +295,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	//HB_GUARD_CLEANUP(ret = uv_recv_buffer_size((uv_handle_t *)client_handle, &recvbuf));
 
 	hb_event_client_open_t *open_evt;
-	HB_GUARD_CLEANUP(ret = hb_event_list_push_back(&service->events, (hb_event_base_t **)&open_evt));
+	HB_GUARD_CLEANUP(ret = hb_event_ready_push(&service->events, (hb_event_base_t **)&open_evt));
 	open_evt->type = HB_EVENT_CLIENT_OPEN;
 	open_evt->client_id = channel->id;
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&host_local, open_evt->host_local, sizeof(open_evt->host_local)));
@@ -357,8 +353,6 @@ void on_prep_cb(uv_prepare_t *handle)
 	tcp_service_t *service = handle->data;
 	assert(service);
 
-	HB_GUARD_CLEANUP(ret = tcp_service_lock(service));
-
 	tcp_channel_t *channel = NULL;
 	tcp_service_write_req_t *send_req = NULL;
 	while (tcp_service_write_req_count(service)) {
@@ -377,37 +371,30 @@ void on_prep_cb(uv_prepare_t *handle)
 	return;
 
 cleanup:
-	hb_log_error("IO lock failed");
+	hb_log_error("IO error failed");
 	hb_log_uv_error(ret);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_check_cb(uv_check_t *handle)
 {
-	int ret = UV_EINVAL;
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
-
-	HB_GUARD_CLEANUP(ret = tcp_service_unlock(service));
-	return;
+	tcp_service_priv_t *priv = service->priv;
 
 cleanup:
-	hb_log_error("IO unlock failed");
-	hb_log_uv_error(ret);
+	hb_log_error("handle missing service data");
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_async_cb(uv_async_t *handle)
 {
-	int ret = UV_EINVAL;
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
 	tcp_service_priv_t *priv = service->priv;
 
-	return;
-
 cleanup:
-	hb_log_uv_error(ret);
+	hb_log_error("handle missing service data");
 }
 
 // --------------------------------------------------------------------------------------------------------------

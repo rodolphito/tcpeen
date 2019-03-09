@@ -10,9 +10,8 @@ int hb_list_ptr_setup(hb_list_ptr_t *list, size_t capacity)
 	HB_GUARD_NULL(list);
 	memset(list, 0, sizeof(*list));
 
-	HB_GUARD_NULL(list->data = HB_MEM_ACQUIRE(capacity * sizeof(*list->data)));
-
 	list->capacity = capacity;
+	HB_GUARD_NULL(list->data = HB_MEM_ACQUIRE(list->capacity * sizeof(*list->data)));
 	
 	return HB_SUCCESS;
 }
@@ -31,6 +30,7 @@ int hb_list_ptr_push_back(hb_list_ptr_t *list, void *item)
 	assert(list->data);
 	assert(item);
 	assert(list->index < list->capacity);
+
 	HB_GUARD(list->index >= list->capacity);
 	list->data[list->index++] = (uintptr_t)item;
 
@@ -43,6 +43,7 @@ int hb_list_ptr_pop_back(hb_list_ptr_t *list, void **item)
 	assert(list);
 	assert(list->data);
 	assert(item);
+	assert(list->index > 0);
 
 	HB_GUARD(list->index == 0);
 	*item = (void *)list->data[--list->index];

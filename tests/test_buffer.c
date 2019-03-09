@@ -1,5 +1,6 @@
 #include "hb/test_harness.h"
 #include "hb/buffer.h"
+#include "hb/buffer_pool.h"
 
 HB_TEST_CASE_BEGIN(test_buffer)
 	hb_buffer_pool_t pool;
@@ -8,12 +9,9 @@ HB_TEST_CASE_BEGIN(test_buffer)
 	size_t blocks = 128;
 
 	ASSERT_SUCCESS(hb_buffer_pool_setup(&pool, blocks, 8));
-	ASSERT_SUCCESS(hb_buffer_pool_lock(&pool));
-	ASSERT_SUCCESS(hb_buffer_pool_unlock(&pool));
 	hb_buffer_pool_cleanup(&pool);
 
 	ASSERT_SUCCESS(hb_buffer_pool_setup(&pool, blocks, 8));
-	ASSERT_SUCCESS(hb_buffer_pool_lock(&pool));
 
 	for (int i = 0; i < 1000000; i++) {
 		ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer1));
@@ -32,7 +30,6 @@ HB_TEST_CASE_BEGIN(test_buffer)
 		ASSERT_SUCCESS(hb_buffer_release(buffer2));
 	}
 
-	ASSERT_SUCCESS(hb_buffer_pool_unlock(&pool));
 	hb_buffer_pool_cleanup(&pool);
 
 	return HB_SUCCESS;
