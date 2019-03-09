@@ -15,14 +15,6 @@ void *hb_aws_default_acquire(struct aws_allocator *allocator, size_t size)
 }
 
 // private ------------------------------------------------------------------------------------------------------
-void *hb_aws_default_realloc(struct aws_allocator *allocator, void **ptr, size_t oldsize, size_t newsize)
-{
-	if (!ptr) return NULL;
-	if (!*ptr) return NULL;
-	return realloc(*ptr, newsize);
-}
-
-// private ------------------------------------------------------------------------------------------------------
 void hb_aws_default_release(struct aws_allocator *allocator, void *ptr)
 {
 	if (!ptr) return;
@@ -32,7 +24,7 @@ void hb_aws_default_release(struct aws_allocator *allocator, void *ptr)
 aws_allocator_t hb_aws_default_allocator = {
 	.mem_acquire = hb_aws_default_acquire,
 	.mem_release = hb_aws_default_release,
-	.mem_realloc = hb_aws_default_realloc,
+	.mem_realloc = NULL,
 	.impl = NULL,
 };
 

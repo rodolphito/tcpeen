@@ -82,13 +82,13 @@ typedef struct hb_event_list_s {
 
 int hb_event_list_setup(hb_event_list_t *list);
 void hb_event_list_cleanup(hb_event_list_t *list);
-void hb_event_list_heap(hb_event_list_t *list, void **out_heap, uint64_t *out_block_count, uint64_t *out_block_size);
+void hb_event_list_heap(hb_event_list_t *list, hb_event_base_t **out_heap, uint64_t *out_block_count, uint64_t *out_block_size);
 
 int hb_event_list_lock(hb_event_list_t *list);
 int hb_event_list_unlock(hb_event_list_t *list);
 
 // everything below requires the list to be locked
-int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint64_t *count);
-int hb_event_list_push_back(hb_event_list_t *list, void **evt);
+int hb_event_list_pop_swap(hb_event_list_t *list, hb_event_base_t **evt, uint64_t *count);
+int hb_event_list_push_back(hb_event_list_t *list, hb_event_base_t **evt);
 
 #endif

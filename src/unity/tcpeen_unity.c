@@ -35,7 +35,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_event_heap_acquire(voi
 	*out_block_size = 0;
 
 	HB_GUARD_NULL(tcp_service.priv);
-	hb_event_list_heap(&tcp_service.events, out_heap_base, out_block_count, out_block_size);
+	hb_event_list_heap(&tcp_service.events, (hb_event_base_t **)out_heap_base, out_block_count, out_block_size);
 
 	return HB_SUCCESS;
 }

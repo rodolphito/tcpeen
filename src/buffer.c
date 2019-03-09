@@ -269,7 +269,7 @@ int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 	assert(pool);
 	assert(out_buffer);
 
-	HB_GUARD(ret = hb_list_ptr_pop_back(&pool->buffer_list_free, out_buffer));
+	HB_GUARD(ret = hb_list_ptr_pop_back(&pool->buffer_list_free, (void **)out_buffer));
 	assert(*out_buffer);
 	pool->blocks_inuse++;
 	pool->bytes_inuse += pool->block_size;

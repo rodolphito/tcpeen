@@ -163,10 +163,10 @@ void on_tick_cb(uv_timer_t *req)
 
 			if (do_connect && conns_made < conns_max) {
 				tcp_connect_begin(&g_tcp_conns[i], cmdline_args.host, cmdline_args.port);
+                conns_made++;
 			} else if (do_send) {
 				tcp_write_begin(g_tcp_conns[i].tcp_handle, cmdline_args.message, cmdline_args.msglen, 0);
 			}
-			conns_made++;
 		}
 
 		buf.len = sprintf(tty_data, "\033[4A\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s",
@@ -203,16 +203,16 @@ void on_tick_cb(uv_timer_t *req)
 			uint64_t latency_avg = 0;
 			uint64_t msgs_total = 0;
 			for (int i = 0; i < g_num_conns; i++) {
-				if (g_tcp_conns[i].ctx->latency_max > latency_max) {
-					latency_max = g_tcp_conns[i].ctx->latency_max;
+				if (g_tcp_conns[i].latency_max > latency_max) {
+					latency_max = g_tcp_conns[i].latency_max;
 				}
-				latency_total += g_tcp_conns[i].ctx->latency_total;
-				msgs_total += g_tcp_conns[i].ctx->recv_msgs;
+				latency_total += g_tcp_conns[i].latency_total;
+				msgs_total += g_tcp_conns[i].recv_msgs;
 			}
 			latency_avg = latency_total / msgs_total;
 
-			printf("worse latency: %zu", latency_max);
-			printf("average latency: %zu", latency_avg);
+			printf("worse latency: %zu\n", latency_max);
+			printf("average latency: %zu\n", latency_avg);
 		}
 	} else if (phase == 4) {
 		g_appstate++;

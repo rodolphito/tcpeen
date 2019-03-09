@@ -28,19 +28,19 @@ HB_TEST_CASE_BEGIN(test_event_list)
 	ASSERT_SUCCESS(hb_event_list_setup(&event_list));
 
 	ASSERT_SUCCESS(hb_event_list_lock(&event_list));
-	ASSERT_SUCCESS(hb_event_list_pop_swap(&event_list, (void **)&evt, &count));
+	ASSERT_SUCCESS(hb_event_list_pop_swap(&event_list, (hb_event_base_t **)&evt, &count));
 	ASSERT_SUCCESS(hb_event_list_unlock(&event_list));
 	ASSERT_TRUE(count == 0);
 
 
-	ASSERT_SUCCESS(hb_event_list_push_back(&event_list, (void **)&evt_open));
+	ASSERT_SUCCESS(hb_event_list_push_back(&event_list, (hb_event_base_t **)&evt_open));
 	evt_open->type = HB_EVENT_CLIENT_OPEN;
 	evt_open->client_id = 874;
 	strcpy(evt_open->host_local, "0.0.0.0:7777");
 	strcpy(evt_open->host_remote, "123.456.789.101:65432");
 
 	ASSERT_SUCCESS(hb_event_list_lock(&event_list));
-	ASSERT_SUCCESS(hb_event_list_pop_swap(&event_list, (void **)&evt, &count));
+	ASSERT_SUCCESS(hb_event_list_pop_swap(&event_list, (hb_event_base_t **)&evt, &count));
 	ASSERT_SUCCESS(hb_event_list_unlock(&event_list));
 	ASSERT_TRUE(count == 1);
 	ASSERT_TRUE(evt->type == HB_EVENT_CLIENT_OPEN);

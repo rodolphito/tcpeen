@@ -19,12 +19,6 @@ typedef struct tcp_ctx_s {
 	uint64_t recv_bytes;
 	uint64_t send_msgs;
 	uint64_t send_bytes;
-	uint64_t latency_total;
-	uint64_t latency_max;
-	uint64_t tstamp_first_msg;
-	uint64_t tstamp_last_msg;
-	uint64_t current_msg_id;
-	uint64_t last_recv_msg_id;
 } tcp_ctx_t;
 
 tcp_ctx_t *tcp_context_new();

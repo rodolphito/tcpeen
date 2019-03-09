@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "hb/list_block.h"
+#include "hb/list_ptr.h"
 #include "hb/endpoint.h"
 #include "hb/buffer.h"
 
@@ -39,6 +39,7 @@ typedef struct tcp_channel_s {
 	int32_t error_code;
 	uint8_t state;
 	uint8_t read_state;
+    uint64_t last_msg_id;
 } tcp_channel_t;
 
 
@@ -46,15 +47,15 @@ typedef struct tcp_channel_list_s {
 	void *priv;
 	tcp_channel_t *client_map;
 	size_t clients_max;
-	hb_list_block_t client_list_free;
-	hb_list_block_t client_list_open;
+	hb_list_ptr_t client_list_free;
+	hb_list_ptr_t client_list_open;
 } tcp_channel_list_t;
 
 
 int tcp_channel_list_setup(tcp_channel_list_t *list, size_t clients_max);
 int tcp_channel_list_cleanup(tcp_channel_list_t *list);
 int tcp_channel_list_open(tcp_channel_list_t *list, tcp_channel_t **out_channel);
-int tcp_channel_list_close(tcp_channel_list_t *list, tcp_channel_t **channel_ptr);
+int tcp_channel_list_close(tcp_channel_list_t *list, tcp_channel_t *channel);
 int tcp_channel_list_reset(tcp_channel_list_t *list);
 int tcp_channel_list_get(tcp_channel_list_t *list, uint64_t client_id, tcp_channel_t **out_channel);
 

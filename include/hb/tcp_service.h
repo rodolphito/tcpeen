@@ -10,7 +10,7 @@
 #include "hb/list_ptr.h"
 #include "hb/map.h"
 
-#define HB_SERVICE_MAX_CLIENTS 10000
+#define HB_SERVICE_MAX_CLIENTS 1000
 #define HB_SERVICE_MAX_READ 65535
 
 

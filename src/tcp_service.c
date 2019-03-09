@@ -242,7 +242,8 @@ int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_ba
 	HB_GUARD(tcp_channel_list_get(&service->channel_list, client_id, &channel));
 	assert(channel);
 
-	//HB_GUARD(channel->state != TCP_CHANNEL_OPEN);
+	HB_GUARD(channel->state != TCP_CHANNEL_OPEN);
+	HB_GUARD(uv_is_closing((uv_handle_t *)channel->priv));
 
 	HB_GUARD(tcp_service_write_req_acquire(service, &send_req));
 	HB_GUARD_NULL(send_req);
@@ -286,10 +287,10 @@ int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_
 	assert(service);
 	assert(out_write_req);
 
-	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_free, out_write_req));
+	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_free, (void **)out_write_req));
 	//memset(*out_write_req, 0, sizeof(**out_write_req));
 	//HB_GUARD(hb_list_ptr_push_back(&service->write_req_ready, *out_write_req));
-    //hb_log_trace("%p", *out_write_req);
+	//hb_log_trace("%p", *out_write_req);
 
 	return HB_SUCCESS;
 }
@@ -300,8 +301,8 @@ int tcp_service_write_req_next(tcp_service_t *service, tcp_service_write_req_t *
 	assert(service);
 	assert(out_write_req);
 
-	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_ready, out_write_req));
-    //hb_log_trace("%p", *out_write_req);
+	HB_GUARD(hb_list_ptr_pop_back(&service->write_req_ready, (void **)out_write_req));
+	//hb_log_trace("%p", *out_write_req);
 
 	return HB_SUCCESS;
 }
@@ -311,7 +312,7 @@ uint64_t tcp_service_write_req_count(tcp_service_t *service)
 {
 	assert(service);
 	return hb_list_ptr_count(&service->write_req_ready);
-    //hb_log_trace("%p", write_req);
+	//hb_log_trace("%p", write_req);
 
 	return HB_SUCCESS;
 }
@@ -323,7 +324,7 @@ int tcp_service_write_req_release(tcp_service_t *service, tcp_service_write_req_
 	assert(write_req);
 
 	HB_GUARD(hb_list_ptr_push_back(&service->write_req_free, write_req));
-    //hb_log_trace("%p", write_req);
+	//hb_log_trace("%p", write_req);
 
 	return HB_SUCCESS;
 }

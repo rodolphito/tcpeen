@@ -23,9 +23,14 @@ typedef struct uv_buffer_work_req_s {
 	int close;
 } uv_buffer_work_req_t;
 
+// --------------------------------------------------------------------------------------------------------------
+void on_close_handle_cb(uv_handle_t *handle)
+{
+    HB_MEM_RELEASE(handle);
+}
 
 // --------------------------------------------------------------------------------------------------------------
-void on_close_release_cb(uv_handle_t *handle)
+void on_close_channel_cb(uv_handle_t *handle)
 {
 	tcp_channel_t *channel = handle->data;
 	assert(channel);
@@ -38,12 +43,12 @@ void on_close_release_cb(uv_handle_t *handle)
 	}
 
 	hb_event_client_close_t *evt;
-	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, &evt));
+	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, (hb_event_base_t **)&evt));
 	evt->type = HB_EVENT_CLIENT_CLOSE;
 	evt->client_id = channel->id;
 	evt->error_code = 0;
 
-	HB_GUARD_CLEANUP(tcp_channel_list_close(&channel->service->channel_list, &channel));
+	HB_GUARD_CLEANUP(tcp_channel_list_close(&channel->service->channel_list, channel));
 
 cleanup:
 	HB_MEM_RELEASE(handle);
@@ -200,7 +205,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
 	hb_event_client_read_t *evt;
-	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, &evt));
+	HB_GUARD_CLEANUP(hb_event_list_push_back(&channel->service->events, (hb_event_base_t **)&evt));
 	evt->type = HB_EVENT_CLIENT_READ;
 	evt->client_id = channel->id;
 	evt->hb_buffer = channel->read_buffer;
@@ -238,7 +243,7 @@ close:
 
 	if (!uv_is_closing((uv_handle_t *)handle)) {
 		channel->state = TCP_CHANNEL_CLOSING;
-		uv_close((uv_handle_t *)handle, on_close_release_cb);
+		uv_close((uv_handle_t *)handle, on_close_channel_cb);
 	}
 
 cleanup:
@@ -249,10 +254,11 @@ cleanup:
 void on_connection_cb(uv_stream_t *server_handle, int status)
 {
 	int ret = UV_EINVAL;
+    int handle_init = 0;
 	uv_tcp_t *client_handle = NULL;
 
 	tcp_service_t *service = server_handle->data;
-	HB_GUARD_NULL_CLEANUP(service);
+	assert(service);
 	tcp_service_priv_t *priv = service->priv;
 
 	if (status < 0) {
@@ -263,9 +269,10 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	ret = UV_ENOMEM;
 	HB_GUARD_NULL_CLEANUP(client_handle = HB_MEM_ACQUIRE(sizeof(*client_handle)));
 	HB_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, client_handle));
+    handle_init = 1;
 	HB_GUARD_CLEANUP(ret = uv_accept(server_handle, (uv_stream_t *)client_handle));
 
-	tcp_channel_t *channel;
+	tcp_channel_t *channel = NULL;
 	HB_GUARD_CLEANUP(ret = tcp_channel_list_open(&service->channel_list, &channel));
 
 	client_handle->data = channel;
@@ -292,7 +299,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	//HB_GUARD_CLEANUP(ret = uv_recv_buffer_size((uv_handle_t *)client_handle, &recvbuf));
 
 	hb_event_client_open_t *open_evt;
-	HB_GUARD_CLEANUP(ret = hb_event_list_push_back(&service->events, &open_evt));
+	HB_GUARD_CLEANUP(ret = hb_event_list_push_back(&service->events, (hb_event_base_t **)&open_evt));
 	open_evt->type = HB_EVENT_CLIENT_OPEN;
 	open_evt->client_id = channel->id;
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&host_local, open_evt->host_local, sizeof(open_evt->host_local)));
@@ -306,9 +313,13 @@ cleanup:
 	hb_log_error("connection error");
 	hb_log_uv_error(ret);
 
-	if (client_handle && !uv_is_closing((uv_handle_t *)client_handle)) {
-		channel->state = TCP_CHANNEL_CLOSING;
-		uv_close((uv_handle_t *)client_handle, on_close_release_cb);
+	if (client_handle) {
+        if (channel) {
+            channel->state = TCP_CHANNEL_CLOSING;
+            uv_close((uv_handle_t *)client_handle, on_close_channel_cb);
+        } else if (handle_init) {
+            uv_close((uv_handle_t *)client_handle, on_close_handle_cb);
+        }
 	}
 }
 

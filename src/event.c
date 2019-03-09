@@ -47,7 +47,7 @@ void hb_event_list_cleanup(hb_event_list_t *list)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_event_list_heap(hb_event_list_t *list, void **out_heap, uint64_t *out_block_count, uint64_t *out_block_size)
+void hb_event_list_heap(hb_event_list_t *list, hb_event_base_t **out_heap, uint64_t *out_block_count, uint64_t *out_block_size)
 {
 	assert(list);
 	assert(out_heap);
@@ -74,7 +74,7 @@ int hb_event_list_unlock(hb_event_list_t *list)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint64_t *count)
+int hb_event_list_pop_swap(hb_event_list_t *list, hb_event_base_t **evt, uint64_t *count)
 {
 	assert(list);
 	assert(evt);
@@ -105,7 +105,7 @@ int hb_event_list_pop_swap(hb_event_list_t *list, void **evt, uint64_t *count)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_event_list_push_back(hb_event_list_t *list, void **evt)
+int hb_event_list_push_back(hb_event_list_t *list, hb_event_base_t **evt)
 {
 	assert(list);
 	assert(evt);
