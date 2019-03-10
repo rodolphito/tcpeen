@@ -134,17 +134,31 @@ HB_TEST_CASE_BEGIN(queue_spsc_empty)
 	uintptr_t intptr;
 	uintptr_t intptr2;
 	hb_queue_spsc_t queue;
+
 	ASSERT_SUCCESS(hb_queue_spsc_setup(&queue, 8));
-	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop(&queue, (void **)&intptr));
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop(&queue));
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_peek(&queue, (void **)&intptr));
+	ASSERT_NULL(intptr);
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop_back(&queue, (void **)&intptr));
 	ASSERT_NULL(intptr);
 
 	intptr = 235235;
+	intptr2 = 0;
 	ASSERT_SUCCESS(hb_queue_spsc_push(&queue, (void *)intptr));
+	ASSERT_SUCCESS(hb_queue_spsc_pop_back(&queue, (void **)&intptr2));
+	ASSERT_TRUE(intptr2 == intptr);
 
-	ASSERT_SUCCESS(hb_queue_spsc_pop(&queue, (void **)&intptr2));
-	ASSERT_TRUE(intptr2 == 235235);
+	intptr = 34754678;
+	intptr2 = 0;
+	ASSERT_SUCCESS(hb_queue_spsc_push(&queue, (void *)intptr));
+	ASSERT_SUCCESS(hb_queue_spsc_peek(&queue, (void **)&intptr2));
+	ASSERT_TRUE(intptr2 == intptr);
 
-	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop(&queue, (void **)&intptr2));
+	ASSERT_SUCCESS(hb_queue_spsc_pop(&queue));
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop(&queue));
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_peek(&queue, (void **)&intptr2));
+	ASSERT_NULL(intptr2);
+	ASSERT_TRUE(HB_QUEUE_EMPTY == hb_queue_spsc_pop_back(&queue, (void **)&intptr2));
 	ASSERT_NULL(intptr2);
 
 	return HB_SUCCESS;
@@ -159,12 +173,18 @@ HB_TEST_CASE_BEGIN(queue_spsc_full)
 	for (int i = 0; i < 8; i++) {
 		ASSERT_SUCCESS(hb_queue_spsc_push(&queue, (void *)intptr));
 	}
+
+	intptr2 = 0;
 	ASSERT_TRUE(HB_QUEUE_FULL == hb_queue_spsc_push(&queue, (void *)intptr));
+	ASSERT_SUCCESS(hb_queue_spsc_pop_back(&queue, (void **)&intptr2));
+	ASSERT_TRUE(intptr2 == intptr);
 
-	ASSERT_SUCCESS(hb_queue_spsc_pop(&queue, (void **)&intptr2));
-	ASSERT_TRUE(intptr2 == 97234);
-
+	intptr2 = 0;
 	ASSERT_SUCCESS(hb_queue_spsc_push(&queue, (void *)intptr));
+	ASSERT_TRUE(HB_QUEUE_FULL == hb_queue_spsc_push(&queue, (void *)intptr));
+	ASSERT_SUCCESS(hb_queue_spsc_peek(&queue, (void **)&intptr2));
+	ASSERT_TRUE(intptr2 == intptr);
+
 	ASSERT_TRUE(HB_QUEUE_FULL == hb_queue_spsc_push(&queue, (void *)intptr));
 
 	return HB_SUCCESS;
@@ -172,7 +192,18 @@ HB_TEST_CASE_BEGIN(queue_spsc_full)
 
 HB_TEST_CASE_BEGIN(queue_spsc_npot)
 	hb_queue_spsc_t queue;
-	ASSERT_TRUE(HB_ERROR_INVAL == hb_queue_spsc_setup(&queue, 11));
+	ASSERT_SUCCESS(HB_ERROR_INVAL == hb_queue_spsc_setup(&queue, 11));
+	ASSERT_TRUE(16 == hb_queue_spsc_capacity(&queue));
+	hb_queue_spsc_cleanup(&queue);
+
+	ASSERT_SUCCESS(hb_queue_spsc_setup(&queue, 16));
+	ASSERT_TRUE(16 == hb_queue_spsc_capacity(&queue));
+	hb_queue_spsc_cleanup(&queue);
+
+	ASSERT_SUCCESS(hb_queue_spsc_setup(&queue, 17));
+	ASSERT_TRUE(32 == hb_queue_spsc_capacity(&queue));
+	hb_queue_spsc_cleanup(&queue);
+
 	return HB_SUCCESS;
 }
 

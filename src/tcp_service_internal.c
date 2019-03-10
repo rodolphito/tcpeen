@@ -73,26 +73,30 @@ void on_send_cb(uv_write_t *req, int status)
 	}
 	write_req->buffer = NULL;
 	
-	if (write_req && tcp_service_write_req_release(write_req->channel->service, write_req)) {
-		hb_log_error("Error releasing send req");
-	}
+	//if (write_req && tcp_service_write_req_release(write_req->channel->service, write_req)) {
+	//	hb_log_error("Error releasing send req");
+	//}
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
-	int ret;
+	HB_GUARD_CLEANUP(!handle);
+	int needpop = 0;
 	tcp_channel_t *channel = handle->data;
 	assert(channel);
 
 	if (!channel->read_buffer) {
-		ret = UV_ENOBUFS;
-		HB_GUARD_CLEANUP(hb_buffer_pool_acquire(&channel->service->pool, &channel->read_buffer));
+		/* there's no choice but to take full ownership of the buffer here */
+		if (hb_buffer_pool_pop_back(&channel->service->pool_read, &channel->read_buffer)) {
+			hb_log_warning("failed to peek read pool, expect UV_ENOBUFS");
+			goto cleanup;
+		}
+		needpop = 1;
 	}
 
 	uint8_t *bufbase = NULL;
 	size_t buflen = 0;
-	ret = UV_E2BIG;
 	hb_buffer_write_ptr(channel->read_buffer, &bufbase, &buflen);
 
 	buf->base = bufbase;
@@ -101,14 +105,10 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	return;
 
 cleanup:
-	channel->error_code = ret;
-
-	if (channel->read_buffer) {
-		hb_buffer_release(channel->read_buffer);
-		channel->read_buffer = NULL;
+	if (buf) {
+		buf->base = NULL;
+		buf->len = 0;
 	}
-	buf->base = NULL;
-	buf->len = 0;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -318,7 +318,6 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 void on_timer_cb(uv_timer_t *handle)
 {
-	int ret = UV_EINVAL;
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
 	tcp_service_priv_t *priv = service->priv;
@@ -327,9 +326,7 @@ void on_timer_cb(uv_timer_t *handle)
 		return;
 	}
 
-	hb_log_debug("buffer pool: %zu -- %zu", service->pool.blocks_inuse, service->pool.blocks_inuse);
-
-	if (service->state != TCP_SERVICE_STARTED) {
+	if (tcp_service_state(&service->state) != TCP_SERVICE_STARTED) {
 		if (!uv_is_closing((uv_handle_t *)priv->tcp_handle)) uv_close((uv_handle_t *)priv->tcp_handle, NULL);
 		if (!uv_is_closing((uv_handle_t *)priv->uv_accept_timer)) uv_close((uv_handle_t *)priv->uv_accept_timer, NULL);
 		if (!uv_is_closing((uv_handle_t *)priv->uv_prep)) uv_close((uv_handle_t *)priv->uv_prep, NULL);
@@ -339,15 +336,14 @@ void on_timer_cb(uv_timer_t *handle)
 	return;
 
 cleanup:
-	hb_log_uv_error(ret);
+	hb_log_error("handle missing service data");
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void on_prep_cb(uv_prepare_t *handle)
 {
-	int ret = UV_EINVAL;
 	tcp_service_t *service = handle->data;
-	assert(service);
+	HB_GUARD_NULL_CLEANUP(service);
 
 	// tcp_channel_t *channel = NULL;
 	// tcp_service_write_req_t *send_req = NULL;
@@ -367,8 +363,7 @@ void on_prep_cb(uv_prepare_t *handle)
 	return;
 
 cleanup:
-	hb_log_error("IO error failed");
-	hb_log_uv_error(ret);
+	hb_log_error("handle missing service data");
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -377,6 +372,7 @@ void on_check_cb(uv_check_t *handle)
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
 	tcp_service_priv_t *priv = service->priv;
+	return;
 
 cleanup:
 	hb_log_error("handle missing service data");
@@ -388,6 +384,7 @@ void on_async_cb(uv_async_t *handle)
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
 	tcp_service_priv_t *priv = service->priv;
+	return;
 
 cleanup:
 	hb_log_error("handle missing service data");

@@ -79,14 +79,17 @@ typedef struct hb_event_list_s {
 int hb_event_list_setup(hb_event_list_t *list, uint64_t capacity);
 void hb_event_list_cleanup(hb_event_list_t *list);
 
-int hb_event_list_free_pop(hb_event_list_t *list, hb_event_base_t **out_evt);
+int hb_event_list_free_pop_back(hb_event_list_t *list, hb_event_base_t **out_evt);
 int hb_event_list_free_pop_error(hb_event_list_t *list, hb_event_error_t **out_evt);
 int hb_event_list_free_pop_open(hb_event_list_t *list, hb_event_client_open_t **out_evt);
 int hb_event_list_free_pop_close(hb_event_list_t *list, hb_event_client_close_t **out_evt);
 int hb_event_list_free_pop_read(hb_event_list_t *list, hb_event_client_read_t **out_evt);
 int hb_event_list_ready_push(hb_event_list_t *list, void *out_evt);
 
-int hb_event_list_ready_pop(hb_event_list_t *list, hb_event_base_t **out_evt);
+int hb_event_list_ready_peek(hb_event_list_t *list, hb_event_base_t **out_evt);
+int hb_event_list_ready_pop(hb_event_list_t *list);
+void hb_event_list_ready_pop_cached(hb_event_list_t *list);
+int hb_event_list_ready_pop_back(hb_event_list_t *list, hb_event_base_t **out_evt);
 int hb_event_list_ready_pop_all(hb_event_list_t *list, hb_event_base_t **out_evt, uint64_t *out_count);
 int hb_event_list_free_push(hb_event_list_t *list, void *evt);
 

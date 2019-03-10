@@ -7,15 +7,15 @@ HB_TEST_CASE_BEGIN(test_service)
 		.priv = NULL,
 	};
 
-	hb_event_base_t *evt;
-	uint64_t count;
-	uint8_t state;
+	//hb_event_base_t *evt;
+	//uint64_t count;
+	//uint8_t state;
 
 	ASSERT_SUCCESS(tcp_service_setup(&tcp_service));
 	ASSERT_SUCCESS(tcp_service_start(&tcp_service, "0.0.0.0", 3456));
 
-	hb_thread_sleep_s(1);
-	ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
+	//hb_thread_sleep_s(1);
+	//ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
 	
 	ASSERT_SUCCESS(tcp_service_stop(&tcp_service));
 	tcp_service_cleanup(&tcp_service);
@@ -24,8 +24,8 @@ HB_TEST_CASE_BEGIN(test_service)
 	ASSERT_SUCCESS(tcp_service_setup(&tcp_service));
 	ASSERT_SUCCESS(tcp_service_start(&tcp_service, "0.0.0.0", 3456));
 
-	hb_thread_sleep_s(1);
-	ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
+	//hb_thread_sleep_s(1);
+	//ASSERT_SUCCESS(tcp_service_update(&tcp_service, &evt, &count, &state));
 
 	ASSERT_SUCCESS(tcp_service_stop(&tcp_service));
 	tcp_service_cleanup(&tcp_service);

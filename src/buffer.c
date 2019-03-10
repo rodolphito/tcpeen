@@ -125,6 +125,18 @@ int hb_buffer_set_length(hb_buffer_t *buffer, size_t len)
 {
 	assert(buffer);
 	if (buffer->buf.capacity - buffer->buf.len >= len) {
+		buffer->buf.len = len;
+		buffer->pos.len = len;
+		return HB_SUCCESS;
+	}
+	return HB_ERROR;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_add_length(hb_buffer_t *buffer, size_t len)
+{
+	assert(buffer);
+	if (buffer->buf.capacity - buffer->buf.len >= len) {
 		buffer->buf.len += len;
 		buffer->pos.len += len;
 		return HB_SUCCESS;
@@ -133,7 +145,7 @@ int hb_buffer_set_length(hb_buffer_t *buffer, size_t len)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-size_t hb_buffer_remaining_length(hb_buffer_t *buffer)
+size_t hb_buffer_remaining(hb_buffer_t *buffer)
 {
 	assert(buffer);
 	return buffer->buf.capacity - buffer->buf.len;
@@ -164,5 +176,5 @@ int hb_buffer_release(hb_buffer_t *buffer)
 {
 	assert(buffer);
 	assert(buffer->pool);
-	return hb_buffer_pool_release(buffer->pool, buffer);
+	return hb_buffer_pool_push(buffer->pool, buffer);
 }

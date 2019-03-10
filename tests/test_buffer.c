@@ -12,24 +12,38 @@ HB_TEST_CASE_BEGIN(test_buffer)
 	hb_buffer_pool_cleanup(&pool);
 
 	ASSERT_SUCCESS(hb_buffer_pool_setup(&pool, blocks, 8));
-
-	for (int i = 0; i < 1000000; i++) {
-		ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer1));
-		ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer2));
-
-		ASSERT_SUCCESS(hb_buffer_pool_release(&pool, buffer1));
-		ASSERT_SUCCESS(hb_buffer_release(buffer2));
-
-		buffer1 = NULL;
-		buffer2 = NULL;
-
-		ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer1));
-		ASSERT_SUCCESS(hb_buffer_pool_acquire(&pool, &buffer2));
-
-		ASSERT_SUCCESS(hb_buffer_pool_release(&pool, buffer1));
-		ASSERT_SUCCESS(hb_buffer_release(buffer2));
+	for (int i = 0; i < blocks; i++) {
+		ASSERT_SUCCESS(hb_buffer_pool_pop(&pool));
 	}
+	ASSERT_TRUE(0 != hb_buffer_pool_pop(&pool));
+	hb_buffer_pool_cleanup(&pool);
 
+	ASSERT_SUCCESS(hb_buffer_pool_setup(&pool, blocks, 8));
+	ASSERT_SUCCESS(hb_buffer_pool_pop_back(&pool, &buffer1));
+	ASSERT_TRUE(pool.blocks_inuse == 1);
+	ASSERT_SUCCESS(hb_buffer_pool_peek(&pool, &buffer2));
+	ASSERT_TRUE(pool.blocks_inuse == 1);
+	ASSERT_SUCCESS(hb_buffer_pool_pop_back(&pool, &buffer2));
+	ASSERT_TRUE(pool.blocks_inuse == 2);
+	ASSERT_SUCCESS(hb_buffer_pool_push(&pool, buffer1));
+	ASSERT_TRUE(pool.blocks_inuse == 1);
+	ASSERT_SUCCESS(hb_buffer_release(buffer2));
+	ASSERT_TRUE(pool.blocks_inuse == 0);
+	ASSERT_TRUE(0 != hb_buffer_pool_push(&pool, buffer1));
+	ASSERT_TRUE(pool.blocks_inuse == 0);
+	ASSERT_TRUE(0 != hb_buffer_release(buffer2));
+	ASSERT_TRUE(pool.blocks_inuse == 0);
+	ASSERT_SUCCESS(0 != hb_buffer_pool_peek(&pool, &buffer1));
+	ASSERT_TRUE(pool.blocks_inuse == 0);
+
+	buffer1 = NULL;
+	buffer2 = NULL;
+
+	ASSERT_SUCCESS(hb_buffer_pool_pop_back(&pool, &buffer1));
+	ASSERT_SUCCESS(hb_buffer_pool_pop_back(&pool, &buffer2));
+
+	ASSERT_SUCCESS(hb_buffer_pool_push(&pool, buffer1));
+	ASSERT_SUCCESS(hb_buffer_release(buffer2));
 	hb_buffer_pool_cleanup(&pool);
 
 	return HB_SUCCESS;

@@ -78,14 +78,7 @@ int main(void)
 			default:
 				break;
 			}
-
 			evt_base++;
-
-			continue;
-
-		cleanup:
-			hb_log_error("Exiting service loop");
-			break;
 		}
 	}
 

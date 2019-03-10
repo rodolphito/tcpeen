@@ -29,7 +29,6 @@ int hb_list_ptr_push_back(hb_list_ptr_t *list, void *item)
 	assert(list);
 	assert(list->data);
 	assert(item);
-	assert(list->index < list->capacity);
 
 	HB_GUARD(list->index >= list->capacity);
 	list->data[list->index++] = (uintptr_t)item;
@@ -43,7 +42,6 @@ int hb_list_ptr_pop_back(hb_list_ptr_t *list, void **item)
 	assert(list);
 	assert(list->data);
 	assert(item);
-	assert(list->index > 0);
 
 	HB_GUARD(list->index == 0);
 	*item = (void *)list->data[--list->index];
@@ -88,7 +86,6 @@ int hb_list_ptr_remove(hb_list_ptr_t *list, size_t index)
 	assert(list);
 
 	HB_GUARD(list->index == 0);
-	HB_GUARD(index >= list->capacity);
 
 	list->data[index] = list->data[--list->index];
 

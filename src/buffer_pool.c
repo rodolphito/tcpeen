@@ -60,22 +60,29 @@ void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
+int hb_buffer_pool_push(hb_buffer_pool_t *pool, hb_buffer_t *buffer)
 {
-	int ret;
+	assert(pool);
+	assert(buffer);
+
+	HB_GUARD(hb_queue_spsc_push(&pool->hb_buffers_free, buffer));
+
+	pool->blocks_inuse--;
+	pool->bytes_inuse -= pool->block_size;
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_pool_peek(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
+{
 	assert(pool);
 	assert(out_buffer);
 
 	*out_buffer = NULL;
 
-	if (hb_queue_spsc_pop(&pool->hb_buffers_free, (void **)out_buffer) == HB_QUEUE_EMPTY) {
-		hb_log_error("hb_buffer_pool_acquire failed due to empty queue");
-		return HB_ERROR;
-	}
+	HB_GUARD(hb_queue_spsc_peek(&pool->hb_buffers_free, (void **)out_buffer));
 	assert(*out_buffer);
-
-	pool->blocks_inuse++;
-	pool->bytes_inuse += pool->block_size;
 
 	hb_buffer_reset(*out_buffer);
 
@@ -83,18 +90,46 @@ int hb_buffer_pool_acquire(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_pool_release(hb_buffer_pool_t *pool, hb_buffer_t *buffer)
+int hb_buffer_pool_pop(hb_buffer_pool_t *pool)
 {
 	assert(pool);
-	assert(buffer);
 
-	if (hb_queue_spsc_push(&pool->hb_buffers_free, buffer) == HB_QUEUE_FULL) {
-		hb_log_error("hb_buffer_pool_acquire failed due to empty queue");
-		return HB_ERROR;
-	}
+	HB_GUARD(hb_queue_spsc_pop(&pool->hb_buffers_free));
 
-	pool->blocks_inuse--;
-	pool->bytes_inuse -= pool->block_size;
+	pool->blocks_inuse++;
+	pool->bytes_inuse += pool->block_size;
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool)
+{
+	assert(pool);
+
+	HB_GUARD(hb_queue_spsc_pop(&pool->hb_buffers_free));
+
+	pool->blocks_inuse++;
+	pool->bytes_inuse += pool->block_size;
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_pool_pop_back(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer)
+{
+	assert(pool);
+	assert(out_buffer);
+
+	*out_buffer = NULL;
+
+	HB_GUARD(hb_queue_spsc_pop_back(&pool->hb_buffers_free, (void **)out_buffer));
+	assert(*out_buffer);
+
+	pool->blocks_inuse++;
+	pool->bytes_inuse += pool->block_size;
+
+	hb_buffer_reset(*out_buffer);
 
 	return HB_SUCCESS;
 }

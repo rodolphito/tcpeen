@@ -151,7 +151,7 @@ target_link_libraries(tcpeen-tests ${HB_TARGET_LINK_LIBS})
 target_compile_definitions(tcpeen-tests PRIVATE ${HB_TARGET_COMPILE_DEFS})
 
 # runner for single test for easy debug step through an impl issue
-#hb_test_single(test_queue_spsc test_queue_spsc_full "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
+#hb_test_single(test_queue_spsc test_queue_spsc_npot "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
 
 #
 # build tcploadgen executable
