@@ -3,6 +3,7 @@
 #include "hb/error.h"
 #include "hb/allocator.h"
 #include "hb/log.h"
+#include "hb/buffer_pool.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

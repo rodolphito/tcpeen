@@ -37,7 +37,7 @@ void consume_spsc_thread_run(void *priv)
 	err_read = prev = 0;
 	while (ready) {
 		count = capacity;
-		if (hb_queue_spsc_pop_multi(queue, (void **)num, &count)) {
+		if (hb_queue_spsc_pop_all(queue, (void **)num, &count)) {
 			hb_thread_sleep_ms(16);
 			err_read++;
 			continue;
@@ -88,7 +88,7 @@ void produce_spsc_thread_run(void *priv)
 HB_TEST_CASE_BEGIN(queue_spsc_stress)
 	hb_queue_spsc_t queue;
 	hb_thread_t consume_thread, produce_thread;
-	static uint64_t tstamp_start, tstamp_write_end, tstamp_read_end, tstamp_end;
+	static uint64_t tstamp_start, tstamp_end;
 
 	assert(((sizeof(queue) % HB_CACHE_LINE_SIZE) == 0));
 

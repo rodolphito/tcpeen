@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifndef _WIN32
+#	include <pthread.h>
+#endif
+
 #include "hb/time.h"
 
 
@@ -28,7 +32,7 @@ enum hb_thread_state {
 
 typedef struct hb_thread_s {
 	struct aws_allocator *allocator;
-	enum aws_thread_detach_state detach_state;
+	enum hb_thread_state detach_state;
 #ifdef _WIN32
 	void *thread_handle;
 	unsigned long thread_id;

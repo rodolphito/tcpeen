@@ -87,8 +87,6 @@ int main(void)
 			hb_log_error("Exiting service loop");
 			break;
 		}
-
-		HB_GUARD_CLEANUP(tcp_service_unlock(&tcp_service));
 	}
 
 	HB_GUARD(tcp_service_stop(&tcp_service));

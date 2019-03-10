@@ -71,7 +71,7 @@ int hb_queue_spsc_push(hb_queue_spsc_t *q, void *ptr)
 	q->buffer[head & q->mask] = (uintptr_t)ptr;
 	hb_atomic_store(&q->head, head + 1);
 
-	return 0;
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -95,15 +95,13 @@ int hb_queue_spsc_pop(hb_queue_spsc_t *q, void **out_ptr)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_queue_spsc_pop_multi(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_count)
+int hb_queue_spsc_pop_all(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_count)
 {
 	assert(q);
 	assert(out_ptr);
 	assert(out_count);
+	assert(*out_count > 0);
 
-	*out_ptr = NULL;
-
-	uint64_t off;
 	const uint64_t mask = q->mask;
 	const uint64_t tail = hb_atomic_load_explicit(&q->tail, HB_ATOMIC_RELAXED);
 	const uint64_t head = hb_atomic_load(&q->head);
@@ -112,11 +110,11 @@ int hb_queue_spsc_pop_multi(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_co
 	if (!size) return HB_QUEUE_EMPTY;
 
 	if (size < *out_count) *out_count = size;
-	for (off = 0; off < *out_count; off++) {
+	for (uint64_t off = 0; off < *out_count; off++) {
 		out_ptr[off] = (void *)q->buffer[(tail + off) & q->mask];
 	}
 
 	hb_atomic_store_explicit(&q->tail, tail + *out_count, HB_ATOMIC_RELAXED);
 
-	return 0;
+	return HB_SUCCESS;
 }

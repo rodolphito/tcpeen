@@ -7,6 +7,11 @@
 #include "hb/tcp_connection.h"
 #include "tcp_service_internal.h"
 
+// private ------------------------------------------------------------------------------------------------------
+void tcp_service_set_state(tcp_service_t *server, tcp_service_state_t state)
+{
+	server->state = state;
+}
 
 // private ------------------------------------------------------------------------------------------------------
 void tcp_service_io_thread(void *data)
@@ -94,24 +99,27 @@ int tcp_service_setup(tcp_service_t *service)
 
 	HB_GUARD_CLEANUP(ret = tcp_channel_list_setup(&service->channel_list, HB_SERVICE_MAX_CLIENTS));
 
-	const uint64_t bufcount = HB_SERVICE_MAX_CLIENTS * 4;
-	HB_GUARD_CLEANUP(hb_buffer_pool_setup(&service->pool, bufcount, HB_SERVICE_MAX_READ));
-	HB_GUARD_CLEANUP(hb_event_list_setup(&service->events, bufcount));
-
-	HB_GUARD_NULL_CLEANUP(service->write_reqs = HB_MEM_ACQUIRE(bufcount * sizeof(*service->write_reqs)));
-	HB_GUARD_CLEANUP(hb_queue_spsc_setup(&service->write_reqs_free, bufcount));
+	service->buffer_count = HB_SERVICE_MAX_CLIENTS * 4;
+	HB_GUARD_CLEANUP(hb_buffer_pool_setup(&service->pool, service->buffer_count, HB_SERVICE_MAX_READ));
+	HB_GUARD_CLEANUP(hb_event_list_setup(&service->events, service->buffer_count));
+	HB_GUARD_NULL_CLEANUP(service->event_updates = HB_MEM_ACQUIRE(service->buffer_count * sizeof(hb_event_base_t *)));
+	HB_GUARD_NULL_CLEANUP(service->write_reqs = HB_MEM_ACQUIRE(service->buffer_count * sizeof(*service->write_reqs)));
+	HB_GUARD_CLEANUP(hb_queue_spsc_setup(&service->write_reqs_free, service->buffer_count));
 
 	tcp_service_write_req_t *write_req;
-	for (uint64_t i = 0; i < bufcount; i++) {
+	for (uint64_t i = 0; i < service->buffer_count; i++) {
 		write_req = &service->write_reqs[i];
 		write_req->id = i;
 		write_req->buffer = NULL;
 		HB_GUARD_CLEANUP(hb_queue_spsc_push(&service->write_reqs_free, write_req));
+
+		service->event_updates[i] = NULL;
 	}
 
 	return HB_SUCCESS;
 
 cleanup:
+	HB_MEM_RELEASE(service->event_updates);
 	HB_MEM_RELEASE(service->write_reqs);
 	HB_MEM_RELEASE(service->priv);
 
@@ -129,6 +137,7 @@ void tcp_service_cleanup(tcp_service_t *service)
 	hb_event_list_cleanup(&service->events);
 	hb_queue_spsc_cleanup(&service->write_reqs_free);
 
+	HB_MEM_RELEASE(service->event_updates);
 	HB_MEM_RELEASE(service->write_reqs);
 	HB_MEM_RELEASE(service->priv);
 }
@@ -170,6 +179,11 @@ int tcp_service_stop(tcp_service_t *service)
 	return HB_SUCCESS;
 }
 
+tcp_service_state_t tcp_service_state(tcp_service_t *service)
+{
+	return service->state;
+}
+
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base, uint64_t *out_count, uint8_t *out_state)
 {
@@ -178,12 +192,10 @@ int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base, u
 	assert(out_count);
 	assert(out_state);
 
-	*out_evt_base = NULL;
-	*out_count = 0;
 	*out_state = service->state;
 
 	if (service->state == TCP_SERVICE_STARTED) {
-		HB_GUARD(hb_event_list_pop_swap(&service->events, out_evt_base, out_count));
+		HB_GUARD(hb_event_list_ready_pop_all(&service->events, out_evt_base, out_count));
 	}
 
 	return HB_SUCCESS;

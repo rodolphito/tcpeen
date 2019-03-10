@@ -34,7 +34,7 @@ void hb_queue_spsc_cleanup(hb_queue_spsc_t *q);
 uint64_t hb_queue_spsc_capacity(hb_queue_spsc_t *q);
 int hb_queue_spsc_push(hb_queue_spsc_t *q, void *ptr);
 int hb_queue_spsc_pop(hb_queue_spsc_t *q, void **out_ptr);
-int hb_queue_spsc_pop_multi(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_count);
+int hb_queue_spsc_pop_all(hb_queue_spsc_t *q, void **out_ptr, uint64_t *out_count);
 
 
 #endif

@@ -204,10 +204,10 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
 	hb_event_client_read_t *evt;
-	HB_GUARD_CLEANUP(hb_event_ready_push(&channel->service->events, (hb_event_base_t **)&evt));
-	evt->type = HB_EVENT_CLIENT_READ;
+	HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
 	evt->client_id = channel->id;
 	evt->hb_buffer = channel->read_buffer;
+	HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, &evt));
 	channel->read_buffer = NULL;
 
 	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
@@ -232,11 +232,6 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	return;
 
 close:
-	if (channel->read_buffer && hb_buffer_release(channel->read_buffer)) {
-		hb_log_error("failed to release buffer on closing channel: %zu", channel->id);
-	}
-	channel->read_buffer = NULL;
-
 	if (!uv_is_closing((uv_handle_t *)handle)) {
 		channel->state = TCP_CHANNEL_CLOSING;
 		uv_close((uv_handle_t *)handle, on_close_channel_cb);
@@ -295,11 +290,12 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	//HB_GUARD_CLEANUP(ret = uv_recv_buffer_size((uv_handle_t *)client_handle, &recvbuf));
 
 	hb_event_client_open_t *open_evt;
-	HB_GUARD_CLEANUP(ret = hb_event_ready_push(&service->events, (hb_event_base_t **)&open_evt));
+	HB_GUARD_CLEANUP(ret = hb_event_list_free_pop_open(&service->events, &open_evt));
 	open_evt->type = HB_EVENT_CLIENT_OPEN;
 	open_evt->client_id = channel->id;
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&host_local, open_evt->host_local, sizeof(open_evt->host_local)));
 	HB_GUARD_CLEANUP(ret = hb_endpoint_get_string(&channel->endpoint, open_evt->host_remote, sizeof(open_evt->host_remote)));
+	HB_GUARD_CLEANUP(ret = hb_event_list_ready_push(&service->events, &open_evt));
 
 	HB_GUARD_CLEANUP(ret = uv_read_start((uv_stream_t *)client_handle, on_recv_alloc_cb, on_recv_cb));
 	
@@ -353,20 +349,20 @@ void on_prep_cb(uv_prepare_t *handle)
 	tcp_service_t *service = handle->data;
 	assert(service);
 
-	tcp_channel_t *channel = NULL;
-	tcp_service_write_req_t *send_req = NULL;
-	while (tcp_service_write_req_count(service)) {
-		HB_GUARD_CLEANUP(tcp_service_write_req_next(service, &send_req));
-		channel = send_req->channel;
-		// hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
-		assert(channel);
-		assert(channel->priv);
-		if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)channel->priv, &send_req->uv_buf, 1, on_send_cb)) {
-			hb_log_error("IO send failed");
-			hb_log_uv_error(ret);
-			tcp_service_write_req_release(service, send_req);
-		}
-	}
+	// tcp_channel_t *channel = NULL;
+	// tcp_service_write_req_t *send_req = NULL;
+	// while (tcp_service_write_req_count(service)) {
+	// 	HB_GUARD_CLEANUP(tcp_service_write_req_next(service, &send_req));
+	// 	channel = send_req->channel;
+	// 	// hb_log_trace("io send channel / req: %p -- %p", channel, send_req);
+	// 	assert(channel);
+	// 	assert(channel->priv);
+	// 	if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)channel->priv, &send_req->uv_buf, 1, on_send_cb)) {
+	// 		hb_log_error("IO send failed");
+	// 		hb_log_uv_error(ret);
+	// 		tcp_service_write_req_release(service, send_req);
+	// 	}
+	// }
 
 	return;
 
