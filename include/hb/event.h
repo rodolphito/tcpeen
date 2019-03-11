@@ -10,7 +10,7 @@
 
 #define HB_EVENT_MAX_SIZE 256
 #define HB_EVENT_PAD_SIZE (HB_EVENT_MAX_SIZE) - sizeof(uint32_t) - sizeof(uint32_t)
-#define HB_EVENT_MAX_SPANS_PER_READ 16
+#define HB_EVENT_MAX_SPANS_PER_READ 12
 
 #define HB_EVENT_FIELDS			\
 	uint32_t id;				\
