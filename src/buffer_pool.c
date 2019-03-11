@@ -103,16 +103,14 @@ int hb_buffer_pool_pop(hb_buffer_pool_t *pool)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool)
+void hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool)
 {
 	assert(pool);
 
-	HB_GUARD(hb_queue_spsc_pop(&pool->hb_buffers_free));
+	hb_queue_spsc_pop_cached(&pool->hb_buffers_free);
 
 	pool->blocks_inuse++;
 	pool->bytes_inuse += pool->block_size;
-
-	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

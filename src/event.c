@@ -52,7 +52,7 @@ int hb_event_list_free_pop_error(hb_event_list_t *list, hb_event_error_t **out_e
 
 	*out_evt = NULL;
 	HB_GUARD(hb_queue_spsc_pop_back(&list->hb_events_free, (void **)out_evt));
-	(*out_evt)->type = HB_EVENT_ERROR;
+	(*out_evt)->type = HB_EVENT_IOERROR;
 	
 	return HB_SUCCESS;
 }

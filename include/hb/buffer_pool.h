@@ -30,7 +30,7 @@ void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool);
 int hb_buffer_pool_push(hb_buffer_pool_t *pool, hb_buffer_t *buffer);
 int hb_buffer_pool_peek(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
 int hb_buffer_pool_pop(hb_buffer_pool_t *pool);
-int hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool);
+void hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool);
 int hb_buffer_pool_pop_back(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
 
 

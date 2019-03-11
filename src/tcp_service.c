@@ -209,31 +209,29 @@ int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[],
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_base, uint64_t length)
+int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen)
 {
 	assert(service);
-	assert(buffer_base);
-
-	tcp_service_write_req_t *send_req = NULL;
-	tcp_channel_t *channel = NULL;
-	HB_GUARD(tcp_channel_list_get(&service->channel_list, client_id, &channel));
 	assert(channel);
+	assert(sndbuf && sndlen);
 
-	/* send req will now be in our hands, but we will need to pop it or drop it before return */
-	/* because we can't put it back in the queue from this end */
+	int ret;
+	tcp_service_write_req_t *send_req;
+
+	/* send req will now be in our hands, but we need to pop it or drop it before return */
+	ret = HB_SEND_NOREQ;
 	HB_GUARD_CLEANUP(hb_queue_spsc_peek(&service->write_reqs_free, (void **)&send_req));
-	send_req->channel = channel;
-	send_req->buffer = NULL;
-
+	
+	ret = HB_SEND_NOBUF;
 	HB_GUARD_CLEANUP(hb_buffer_pool_peek(&service->pool_write, &send_req->buffer));
-	if (hb_buffer_write(send_req->buffer, buffer_base, length)) {
-		hb_log_error("channel id: &zu -- failed writing %zu bytes into %zu capacity", client_id, length, hb_buffer_remaining(send_req->buffer));
-		goto cleanup;
-	}
+	HB_GUARD_CLEANUP(hb_buffer_write(send_req->buffer, sndbuf, sndlen));
+
+	send_req->channel = channel;
 	send_req->uv_buf.base = hb_buffer_read_ptr(send_req->buffer);
 	send_req->uv_buf.len = UV_BUFLEN_CAST(hb_buffer_length(send_req->buffer));
 
 	/* push the request into the ready queue *before* popping anything from free queues */
+	ret = HB_SEND_PUSH;
 	HB_GUARD(hb_queue_spsc_push(&service->write_reqs_ready, send_req));
 	hb_buffer_pool_pop_cached(&service->pool_write);
 	hb_queue_spsc_pop_cached(&service->write_reqs_free);
@@ -241,8 +239,8 @@ int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_ba
 	return HB_SUCCESS;
 
 cleanup:
-	
-	return HB_ERROR;
+	hb_log_error("failed to send write request: %d", ret);
+	return ret;
 }
 
 // --------------------------------------------------------------------------------------------------------------

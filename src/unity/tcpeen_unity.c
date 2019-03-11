@@ -71,7 +71,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_send(uint64_t 
 	HB_GUARD_NULL(buffer);
 	HB_GUARD_NULL(length);
 
-	HB_GUARD(tcp_service_send(&tcp_service, client_id, buffer, length));
+	//HB_GUARD(tcp_service_send(&tcp_service, client_id, buffer, length));
 
 	return HB_SUCCESS;
 }

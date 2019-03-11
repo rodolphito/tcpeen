@@ -47,24 +47,30 @@ void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 	uint64_t latency = 0;
 	uint64_t msg_id = 0;
 	uint32_t msg_len = 0;
+	uint32_t msg_remaining = 0;
 
 	tcp_conn_t *conn = (tcp_conn_t *)stream->data;
 
 	// TODO: determine if 0 bytes is a graceful close which is usually standard
 	if (nread >= 0) {
 		struct aws_byte_cursor bc = aws_byte_cursor_from_array(buf->base, nread);
-		aws_byte_cursor_read_be32(&bc, &msg_len);
-		aws_byte_cursor_read_be64(&bc, &msg_id);
-		aws_byte_cursor_read_be64(&bc, &latency);
+		while (1) {
+			if (!aws_byte_cursor_read_be32(&bc, &msg_len)) break;
+			if (!aws_byte_cursor_read_be64(&bc, &msg_id)) break;
+			if (!aws_byte_cursor_read_be64(&bc, &latency)) break;
 
-		latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
+			msg_remaining = msg_len - 16;
+			aws_byte_cursor_advance(&bc, msg_remaining);
 
-		//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
-		if (msg_id != conn->last_recv_msg_id + 1) {
-			hb_log_warning("len: %zd -- expected id: %zu but recvd id: %zu", nread, msg_id, conn->last_recv_msg_id);
-		} else {
-			conn->last_recv_msg_id++;
-			//hb_log_debug("len: %zd -- id match: %zu - %zu", nread, msg_id, conn->last_recv_msg_id);
+			latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
+
+			//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
+			if (msg_id != conn->last_recv_msg_id + 1) {
+				hb_log_warning("len: %zd -- expected id: %zu but recvd id: %zu", nread, msg_id, conn->last_recv_msg_id);
+			} else {
+				conn->last_recv_msg_id++;
+				//hb_log_debug("len: %zd -- id match: %zu - %zu", nread, msg_id, conn->last_recv_msg_id);
+			}
 		}
 
 		conn->latency_total += latency;

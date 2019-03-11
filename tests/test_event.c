@@ -16,6 +16,7 @@ HB_TEST_CASE_BEGIN(test_event_list)
 	ASSERT_TRUE(sizeof(hb_event_client_open_t) <= max_size);
 	ASSERT_TRUE(sizeof(hb_event_client_close_t) <= max_size);
 	ASSERT_TRUE(sizeof(hb_event_client_read_t) <= max_size);
+	ASSERT_TRUE(sizeof(hb_event_io_stats_t) <= max_size);
 
 	ASSERT_SUCCESS(hb_event_list_setup(&event_list, 100));
 	hb_event_list_cleanup(&event_list);

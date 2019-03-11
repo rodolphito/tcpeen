@@ -74,7 +74,7 @@ typedef struct tcp_service_s {
 	/* write request ready list for main thread --> IO thread */
 	hb_queue_spsc_t write_reqs_ready;
 
-	/* overall connection statistics - these will be sent in the event queue. - don't touch */
+	/* overall connection statistics - these will be sent in the event queue - don't touch */
 	hb_event_io_stats_t stats;
 
 	/* server state (connecting, connecting, etc) */
@@ -88,7 +88,7 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
 tcp_service_state_t tcp_service_state(tcp_service_t *service);
 int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[], uint64_t *out_count);
-int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_base, uint64_t length);
+int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);
 
 int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
 int tcp_service_write_req_next(tcp_service_t *service, tcp_service_write_req_t **out_write_req);

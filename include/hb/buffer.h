@@ -11,6 +11,11 @@
 // forwards
 typedef struct hb_buffer_pool_s hb_buffer_pool_t;
 
+typedef struct hb_buffer_span_s {
+	size_t len;
+	uint8_t *ptr;
+} hb_buffer_span_t;
+
 typedef struct hb_buffer_s {
 	void *priv;
 	hb_buffer_pool_t *pool;
@@ -20,6 +25,8 @@ typedef struct hb_buffer_s {
 
 
 int hb_buffer_read(hb_buffer_t *buffer, uint8_t *out_buffer, size_t len);
+int hb_buffer_read_seek(hb_buffer_t *buffer, hb_buffer_span_t *span);
+int hb_buffer_read_skip(hb_buffer_t *buffer, size_t len);
 int hb_buffer_read_u8(hb_buffer_t *buffer, uint8_t *out_val);
 int hb_buffer_read_be16(hb_buffer_t *buffer, uint16_t *out_val);
 int hb_buffer_read_be32(hb_buffer_t *buffer, uint32_t *out_val);
@@ -35,6 +42,7 @@ void hb_buffer_write_reset(hb_buffer_t *buffer);
 void hb_buffer_reset(hb_buffer_t *buffer);
 
 size_t hb_buffer_length(hb_buffer_t *buffer);
+size_t hb_buffer_read_length(hb_buffer_t *buffer);
 int hb_buffer_set_length(hb_buffer_t *buffer, size_t len);
 int hb_buffer_add_length(hb_buffer_t *buffer, size_t len);
 size_t hb_buffer_remaining(hb_buffer_t *buffer);

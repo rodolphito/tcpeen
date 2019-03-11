@@ -194,12 +194,50 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	recv_bytes += nread;
 	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
-	hb_event_client_read_t *evt;
-	HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
-	evt->client_id = channel->id;
-	evt->hb_buffer = channel->read_buffer;
-	HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
-	channel->read_buffer = NULL;
+	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
+	int span_idx = 0;
+	while (tcp_channel_state(channel) == TCP_CHANNEL_OPEN) {
+		int stalled_or_maxed = 0;
+		int header_len = 0;
+
+		switch (tcp_channel_read_state(channel)) {
+		case TCP_CHANNEL_READ_HEADER:
+			if (!tcp_channel_read_header(channel, &header_len)) {
+				stalled_or_maxed = 1;
+				//hb_log_debug("read header len: %u", header_len);
+			}
+			break;
+		case TCP_CHANNEL_READ_PAYLOAD:
+			if (!tcp_channel_read_payload(channel, &span[span_idx])) {
+				stalled_or_maxed = 1;
+				//hb_log_debug("read payload: %p -- %u", span[span_idx].ptr, span[span_idx].len);
+				if (++span_idx >= HB_EVENT_MAX_SPANS_PER_READ) {
+					hb_log_warning("maxed out reading spans on channel: %zu", channel->id);
+					stalled_or_maxed = 1;
+					break;
+				}
+			}
+			break;
+		}
+
+		if (!stalled_or_maxed) break;
+	}
+
+	if (span_idx) {
+		hb_event_client_read_t *evt;
+		HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
+		
+		evt->client_id = channel->id;
+		evt->hb_buffer = channel->read_buffer;
+		memcpy(&evt->span, &span, sizeof(evt->span));
+		if (span_idx < HB_EVENT_MAX_SPANS_PER_READ) {
+			evt->span[span_idx].ptr = NULL;
+			evt->span[span_idx].len = 0;
+		}
+
+		HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
+		channel->read_buffer = NULL;
+	}
 
 	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
 	//	hb_log_uv_error(UV_ENOMEM);
@@ -263,6 +301,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	channel->state = TCP_CHANNEL_OPEN;
 	channel->error_code = 0;
 	channel->read_buffer = NULL;
+	channel->last_msg_id = 0;
 
 	struct sockaddr_storage addr;
 	int addrlen = sizeof(addr);

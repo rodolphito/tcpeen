@@ -7,11 +7,29 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+/* general return status */
 #define HB_SUCCESS 0
 #define HB_ERROR -1
-#define HB_ERROR_AGAIN -EAGAIN
-#define HB_ERROR_NOMEM -ENOMEM
-#define HB_ERROR_INVAL -EINVAL
+#define HB_ERROR_AGAIN EAGAIN
+#define HB_ERROR_NOMEM ENOMEM
+#define HB_ERROR_INVAL EINVAL
+
+/* queue return status */
+#define HB_QUEUE_EMPTY -100
+#define HB_QUEUE_FULL -101
+#define HB_QUEUE_AGAIN -102
+
+/* event return status */
+#define HB_EVENT_ERROR -200
+#define HB_EVENT_NOCHAN -201
+#define HB_EVENT_NOSPAN -202
+#define HB_EVENT_SPANREAD -203
+
+/* send / IO write return status */
+#define HB_SEND_ERROR -300
+#define HB_SEND_NOREQ -301
+#define HB_SEND_NOBUF -302
+#define HB_SEND_PUSH -303
 
 #define HB_ASSERT(expr) assert(expr)
 #define HB_GUARD(expr) if ((expr)) return HB_ERROR

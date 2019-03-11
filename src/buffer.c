@@ -16,6 +16,28 @@ int hb_buffer_read(hb_buffer_t *buffer, uint8_t *out_buffer, size_t len)
 }
 
 // --------------------------------------------------------------------------------------------------------------
+int hb_buffer_read_seek(hb_buffer_t *buffer, hb_buffer_span_t *span)
+{
+	assert(buffer);
+	assert(span && span->ptr && span->len);
+	assert((span->ptr + span->len) < (buffer->buf.buffer + buffer->buf.capacity));
+	buffer->pos.ptr = span->ptr;
+	buffer->pos.len = span->len;
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_read_skip(hb_buffer_t *buffer, size_t len)
+{
+	assert(buffer);
+	struct aws_byte_cursor span = aws_byte_cursor_advance(&buffer->pos, len);
+	if (span.ptr && span.len) {
+		return HB_SUCCESS;
+	}
+	return HB_ERROR;
+}
+
+// --------------------------------------------------------------------------------------------------------------
 int hb_buffer_read_u8(hb_buffer_t *buffer, uint8_t *out_val)
 {
 	assert(buffer);
@@ -118,6 +140,13 @@ size_t hb_buffer_length(hb_buffer_t *buffer)
 {
 	assert(buffer);
 	return buffer->buf.len;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+size_t hb_buffer_read_length(hb_buffer_t *buffer)
+{
+	assert(buffer);
+	return buffer->pos.len;
 }
 
 // --------------------------------------------------------------------------------------------------------------

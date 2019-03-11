@@ -5,14 +5,12 @@
 
 #include "hb/queue_spsc.h"
 #include "hb/endpoint.h"
-
-
-// forwards
-typedef struct hb_buffer_s hb_buffer_t;
+#include "hb/buffer.h"
 
 
 #define HB_EVENT_MAX_SIZE 256
 #define HB_EVENT_PAD_SIZE (HB_EVENT_MAX_SIZE) - sizeof(uint32_t) - sizeof(uint32_t)
+#define HB_EVENT_MAX_SPANS_PER_READ 16
 
 #define HB_EVENT_FIELDS			\
 	uint32_t id;				\
@@ -21,7 +19,7 @@ typedef struct hb_buffer_s hb_buffer_t;
 
 typedef enum hb_event_type_e {
 	HB_EVENT_NONE = 0,
-	HB_EVENT_ERROR,
+	HB_EVENT_IOERROR,
 	HB_EVENT_CLIENT_OPEN,
 	HB_EVENT_CLIENT_CLOSE,
 	HB_EVENT_CLIENT_READ,
@@ -64,7 +62,7 @@ typedef struct hb_event_client_read_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	hb_buffer_t *hb_buffer;
-	uint8_t *msg_ptr[10];
+	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
 } hb_event_client_read_t;
 
 // IO stats

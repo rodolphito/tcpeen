@@ -7,10 +7,6 @@
 #include "hb/atomic.h"
 
 
-#define HB_QUEUE_EMPTY -100
-#define HB_QUEUE_FULL -101
-#define HB_QUEUE_AGAIN -102
-
 #define HB_CACHE_LINE_SIZE 64
 
 
