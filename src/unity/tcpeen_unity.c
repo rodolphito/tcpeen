@@ -60,7 +60,7 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(hb_even
 	HB_GUARD_NULL(out_block_count);
 	HB_GUARD_NULL(out_state);
 	
-	HB_GUARD(tcp_service_update(&tcp_service, out_heap_base, out_block_count, out_state));
+	HB_GUARD(tcp_service_update(&tcp_service, &out_heap_base, out_block_count));
 
 	return HB_SUCCESS;
 }

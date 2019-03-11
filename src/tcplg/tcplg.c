@@ -211,7 +211,7 @@ void on_tick_cb(uv_timer_t *req)
 			}
 			latency_avg = latency_total / msgs_total;
 
-			printf("worse latency: %zu\n", latency_max);
+			printf("worst observed latency: %zu\n", latency_max);
 			printf("average latency: %zu\n", latency_avg);
 		}
 	} else if (phase == 4) {

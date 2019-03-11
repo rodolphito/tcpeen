@@ -67,6 +67,18 @@ typedef struct hb_event_client_read_s {
 	uint8_t *msg_ptr[10];
 } hb_event_client_read_t;
 
+// IO stats
+typedef struct hb_event_io_stats_s {
+	HB_EVENT_FIELDS
+	uint32_t connections_total;
+	uint32_t connections_new;
+	uint32_t connections_lost;
+	uint32_t recv_msgs;
+	uint32_t recv_bytes;
+	uint32_t send_msgs;
+	uint32_t send_bytes;
+} hb_event_io_stats_t;
+
 
 typedef struct hb_event_list_s {
 	hb_event_base_t *hb_events;
@@ -92,5 +104,6 @@ void hb_event_list_ready_pop_cached(hb_event_list_t *list);
 int hb_event_list_ready_pop_back(hb_event_list_t *list, hb_event_base_t **out_evt);
 int hb_event_list_ready_pop_all(hb_event_list_t *list, hb_event_base_t **out_evt, uint64_t *out_count);
 int hb_event_list_free_push(hb_event_list_t *list, void *evt);
+
 
 #endif

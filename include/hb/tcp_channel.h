@@ -37,11 +37,10 @@ typedef struct tcp_channel_s {
 	hb_buffer_t *read_buffer;
 	hb_endpoint_t endpoint;
 	int32_t error_code;
-	uint8_t state;
-	uint8_t read_state;
+	tcp_service_client_state_t state;
+	tcp_channel_read_state_t read_state;
 	uint64_t last_msg_id;
 } tcp_channel_t;
-
 
 typedef struct tcp_channel_list_s {
 	void *priv;
@@ -58,5 +57,6 @@ int tcp_channel_list_open(tcp_channel_list_t *list, tcp_channel_t **out_channel)
 int tcp_channel_list_close(tcp_channel_list_t *list, tcp_channel_t *channel);
 int tcp_channel_list_reset(tcp_channel_list_t *list);
 int tcp_channel_list_get(tcp_channel_list_t *list, uint64_t client_id, tcp_channel_t **out_channel);
+
 
 #endif

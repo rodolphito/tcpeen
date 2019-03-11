@@ -7,7 +7,6 @@
 #include "aws/common/byte_buf.h"
 
 #include "hb/mutex.h"
-#include "hb/list_ptr.h"
 
 // forwards
 typedef struct hb_buffer_pool_s hb_buffer_pool_t;
@@ -39,9 +38,10 @@ size_t hb_buffer_length(hb_buffer_t *buffer);
 int hb_buffer_set_length(hb_buffer_t *buffer, size_t len);
 int hb_buffer_add_length(hb_buffer_t *buffer, size_t len);
 size_t hb_buffer_remaining(hb_buffer_t *buffer);
+size_t hb_buffer_capacity(hb_buffer_t *buffer);
 
-void hb_buffer_write_ptr(hb_buffer_t *buffer, uint8_t **out_write_ptr, size_t *out_write_len);
-void hb_buffer_read_ptr(hb_buffer_t *buffer, uint8_t **out_read_ptr, size_t *out_read_len);
+void *hb_buffer_write_ptr(hb_buffer_t *buffer);
+void *hb_buffer_read_ptr(hb_buffer_t *buffer);
 
 int hb_buffer_release(hb_buffer_t *buffer);
 

@@ -1,6 +1,7 @@
 #ifndef HB_QUEUE_SPSC_H
 #define HB_QUEUE_SPSC_H
 
+
 #include <stdint.h>
 
 #include "hb/atomic.h"

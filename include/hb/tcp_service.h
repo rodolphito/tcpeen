@@ -11,7 +11,7 @@
 #include "hb/queue_spsc.h"
 
 
-#define HB_SERVICE_MAX_CLIENTS 1000
+#define HB_SERVICE_MAX_CLIENTS 10000
 #define HB_SERVICE_MAX_READ 65535
 
 
@@ -20,7 +20,7 @@ typedef struct tcp_service_write_req_s tcp_service_write_req_t;
 
 
 typedef enum tcp_service_state_e {
-	TCP_SERVICE_NEW, 
+	TCP_SERVICE_NEW,
 	TCP_SERVICE_STARTING,
 	TCP_SERVICE_STARTED,
 	TCP_SERVICE_STOPPING,
@@ -68,11 +68,14 @@ typedef struct tcp_service_s {
 	/* write request pool for main thread */
 	tcp_service_write_req_t *write_reqs;
 
-	/* write request free list for pop to main thread and push to IO thread*/
+	/* write request free list for IO thread --> main thread */
 	hb_queue_spsc_t write_reqs_free;
 
-	/* overall connection statistics (not currently used) */
-	tcp_service_stats_t stats;
+	/* write request ready list for main thread --> IO thread */
+	hb_queue_spsc_t write_reqs_ready;
+
+	/* overall connection statistics - these will be sent in the event queue. - don't touch */
+	hb_event_io_stats_t stats;
 
 	/* server state (connecting, connecting, etc) */
 	hb_atomic_t state;
@@ -84,7 +87,7 @@ void tcp_service_cleanup(tcp_service_t *service);
 int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
 tcp_service_state_t tcp_service_state(tcp_service_t *service);
-int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base, uint64_t *out_count);
+int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[], uint64_t *out_count);
 int tcp_service_send(tcp_service_t *service, uint64_t client_id, void *buffer_base, uint64_t length);
 
 int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
