@@ -65,11 +65,12 @@ void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 			latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
 
 			//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
-			if (msg_id != conn->last_recv_msg_id + 1) {
-				hb_log_warning("len: %zd -- expected id: %zu but recvd id: %zu", nread, msg_id, conn->last_recv_msg_id);
+			const uint64_t expected = (conn->last_recv_msg_id + 1);
+			if (msg_id != expected) {
+				hb_log_warning("total len: %zd -- span len: %u -- expected id: %zu but recvd id: %zu", nread, msg_len, expected, msg_id);
 			} else {
-				conn->last_recv_msg_id++;
-				//hb_log_debug("len: %zd -- id match: %zu - %zu", nread, msg_id, conn->last_recv_msg_id);
+				conn->last_recv_msg_id = expected;
+				//hb_log_debug("total len: %zd -- span len: %u -- id match: %zu", nread, msg_len, msg_id);
 			}
 		}
 
@@ -226,7 +227,7 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 		hb_log_error("aws_byte_buf_write failed");
 	}
 
-	 //hb_log_trace("sending: %d -> %zu -- %zu -- %zu\n", len, bb_data.len, conn->current_msg_id, cur_ticks);
+	//hb_log_trace("sending: %d -> %zu -- %zu -- %zu", len, bb_data.len, conn->current_msg_id, cur_ticks);
 
 	tcp_write_req_t *write_req = HB_MEM_ACQUIRE(sizeof(*write_req));
 	if (!write_req) {

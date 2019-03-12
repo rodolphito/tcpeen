@@ -15,6 +15,7 @@ typedef struct tcp_service_priv_s {
 	uv_timer_t *uv_accept_timer;
 	uv_prepare_t *uv_prep;
 	uv_check_t *uv_check;
+	uv_signal_t *uv_signal;
 } tcp_service_priv_t;
 
 typedef struct tcp_service_write_req_s {
@@ -26,6 +27,7 @@ typedef struct tcp_service_write_req_s {
 } tcp_service_write_req_t;
 
 
+void on_sigint_cb(uv_signal_t *handle, int signum);
 void on_close_release_cb(uv_handle_t* handle);
 void on_close_cb(uv_handle_t *handle);
 void on_send_cb(uv_write_t *req, int status);

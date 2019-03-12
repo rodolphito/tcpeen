@@ -19,18 +19,23 @@ int handle_client_read(tcp_service_t *service, hb_event_client_read_t *evt_read)
 	uint64_t msg_id;
 	uint64_t tstamp;
 	for (int s = 0; s < HB_EVENT_MAX_SPANS_PER_READ; s++) {
-		if (!evt_read->span[s].ptr) break;
+		if (!evt_read->span[s].ptr) {
+			//hb_log_debug("end of spans");
+			break;
+		}
 		ret = HB_EVENT_SPANREAD;
 
 		HB_GUARD_CLEANUP(hb_buffer_read_seek(evt_read->hb_buffer, &evt_read->span[s]));
 		HB_GUARD_CLEANUP(hb_buffer_read_be64(evt_read->hb_buffer, &msg_id));
 		HB_GUARD_CLEANUP(hb_buffer_read_be64(evt_read->hb_buffer, &tstamp));
+		//hb_log_debug("connection: %zu -- span: %d -- msg_id: %zu -- tstamp: %zu", evt_read->client_id, s, msg_id, tstamp);
 
-		if (msg_id != channel->last_msg_id + 1) {
+		const uint64_t expected_id = channel->last_msg_id + 1;
+		if (msg_id != expected_id) {
 			hb_log_warning("connection: %zu -- msg len: %zu -- id mismatch: %zu - %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), channel->last_msg_id + 1, msg_id);
 		} else {
-			//hb_log_debug("connection: %zu -- msg len: %zu -- id match: %zu - %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), channel->last_msg_id + 1, msg_id);
-			channel->last_msg_id++;
+			//hb_log_debug("connection: %zu -- msg len: %zu -- id match: %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), msg_id);
+			channel->last_msg_id = expected_id;
 		}
 
 		//HB_GUARD_CLEANUP(ret = tcp_service_send(service, channel, evt_read->span[s].ptr, evt_read->span[s].len));
@@ -65,7 +70,7 @@ int main(void)
 
 	HB_GUARD(tcp_service_start(&tcp_service, "0.0.0.0", 7777));
 
-	while (1) {
+	while (tcp_service_state(&tcp_service) != TCP_SERVICE_STOPPING) {
 		// emulate 60 fps tick rate on Unity main thread
 		hb_thread_sleep_ms(16);
 

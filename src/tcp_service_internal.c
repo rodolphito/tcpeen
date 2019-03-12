@@ -25,6 +25,21 @@ typedef struct uv_buffer_work_req_s {
 
 
 // --------------------------------------------------------------------------------------------------------------
+void on_sigint_cb(uv_signal_t *handle, int signum)
+{
+	if (signum != SIGINT) return;
+
+	hb_log_trace("received SIGINT");
+
+	tcp_service_t *service = handle->data;
+	assert(service);
+	
+	if (tcp_service_stop_signal(service)) {
+		hb_log_error("failed to stop tcp service");
+	}
+}
+
+// --------------------------------------------------------------------------------------------------------------
 void on_close_handle_cb(uv_handle_t *handle)
 {
 	HB_MEM_RELEASE(handle);
@@ -162,36 +177,29 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 {
+	int ret = HB_RECV_ERROR;
+	int close_channel = 0;
 	uv_buffer_work_req_t *work_req = NULL;
 	tcp_channel_t *channel = handle->data;
 	assert(channel);
 
 	if (nread < 0) {
 		/* nread is an errno when < 0 */
-		int closechan = 0;
-		channel->error_code = (int)nread;
-
-		switch (channel->error_code) {
-		case UV_ENOBUFS: // no available buffer space
-			closechan = 0;
-		case UV_ECONNRESET: // connection reset by peer
-		case UV_EOF: // EOF in TCP means the peer disconnected gracefully
-			closechan = 1;
-			break;
-		default:
-			closechan = 1;
-			hb_log_uv_error(channel->error_code);
-			break;
-		}
-
-		if (closechan) goto close;
+		ret = (int)nread;
+		close_channel = 1;
+		goto cleanup;
 	} else if (nread == 0 || !buf) {
 		/* this is technically not an error */
 		goto cleanup;
 	}
 
+	if (nread >= HB_SERVICE_MAX_READ) {
+		hb_log_error("read full %zd buffer on client: %zu", nread, channel->id);
+	}
+
 	recv_msgs++;
 	recv_bytes += nread;
+	ret = HB_RECV_EBUF;
 	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
 
 	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
@@ -202,28 +210,33 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 
 		switch (tcp_channel_read_state(channel)) {
 		case TCP_CHANNEL_READ_HEADER:
-			if (!tcp_channel_read_header(channel, &header_len)) {
+			if (tcp_channel_read_header(channel, &header_len)) {
 				stalled_or_maxed = 1;
+				break;
 				//hb_log_debug("read header len: %u", header_len);
 			}
 			break;
 		case TCP_CHANNEL_READ_PAYLOAD:
-			if (!tcp_channel_read_payload(channel, &span[span_idx])) {
+			if (tcp_channel_read_payload(channel, &span[span_idx])) {
 				stalled_or_maxed = 1;
+				break;
 				//hb_log_debug("read payload: %p -- %u", span[span_idx].ptr, span[span_idx].len);
-				if (++span_idx >= HB_EVENT_MAX_SPANS_PER_READ) {
-					hb_log_warning("maxed out reading spans on channel: %zu", channel->id);
-					stalled_or_maxed = 1;
-					break;
-				}
+			}
+
+			if (++span_idx >= HB_EVENT_MAX_SPANS_PER_READ) {
+				hb_log_warning("maxed out reading %zd bytes of spans on channel: %zu", nread, channel->id);
+				//stalled_or_maxed = 1;
+				span_idx = HB_EVENT_MAX_SPANS_PER_READ - 1;
+				break;
 			}
 			break;
 		}
 
-		if (!stalled_or_maxed) break;
+		if (stalled_or_maxed) break;
 	}
 
 	if (span_idx) {
+		ret = HB_RECV_EVTPOP;
 		hb_event_client_read_t *evt;
 		HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
 		
@@ -235,9 +248,12 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 			evt->span[span_idx].len = 0;
 		}
 
+		ret = HB_RECV_EVTPUSH;
 		HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
 		channel->read_buffer = NULL;
 	}
+
+	/* successful recv */
 
 	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
 	//	hb_log_uv_error(UV_ENOMEM);
@@ -260,13 +276,15 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 
 	return;
 
-close:
-	if (!uv_is_closing((uv_handle_t *)handle)) {
-		channel->state = TCP_CHANNEL_CLOSING;
-		uv_close((uv_handle_t *)handle, on_close_channel_cb);
-	}
-
 cleanup:
+	channel->error_code = ret;
+	if (close_channel) {
+		if (!uv_is_closing((uv_handle_t *)handle)) {
+			channel->state = TCP_CHANNEL_CLOSING;
+			uv_close((uv_handle_t *)handle, on_close_channel_cb);
+		}
+	}
+	
 	HB_MEM_RELEASE(work_req);
 }
 

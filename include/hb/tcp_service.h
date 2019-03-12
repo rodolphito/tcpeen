@@ -86,6 +86,7 @@ int tcp_service_setup(tcp_service_t *service);
 void tcp_service_cleanup(tcp_service_t *service);
 int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
+int tcp_service_stop_signal(tcp_service_t *service);
 tcp_service_state_t tcp_service_state(tcp_service_t *service);
 int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[], uint64_t *out_count);
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);

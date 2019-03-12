@@ -29,16 +29,14 @@ void tcp_service_io_thread(void *data)
 	priv->uv_prep = NULL;
 	priv->uv_check = NULL;
 
-	// if allocations fail it's because we are out of memory
 	ret = UV_ENOMEM;
 	HB_GUARD_NULL_CLEANUP(priv->uv_loop = HB_MEM_ACQUIRE(sizeof(*priv->uv_loop)));
 	HB_GUARD_NULL_CLEANUP(priv->tcp_handle = HB_MEM_ACQUIRE(sizeof(*priv->tcp_handle)));
 	HB_GUARD_NULL_CLEANUP(priv->uv_accept_timer = HB_MEM_ACQUIRE(sizeof(*priv->uv_accept_timer)));
 	HB_GUARD_NULL_CLEANUP(priv->uv_prep = HB_MEM_ACQUIRE(sizeof(*priv->uv_prep)));
 	HB_GUARD_NULL_CLEANUP(priv->uv_check = HB_MEM_ACQUIRE(sizeof(*priv->uv_check)));
+	HB_GUARD_NULL_CLEANUP(priv->uv_signal = HB_MEM_ACQUIRE(sizeof(*priv->uv_signal)));
 
-
-	// loop / timers init
 	HB_GUARD_CLEANUP(ret = uv_loop_init(priv->uv_loop));
 
 	HB_GUARD_CLEANUP(ret = uv_timer_init(priv->uv_loop, priv->uv_accept_timer));
@@ -53,6 +51,9 @@ void tcp_service_io_thread(void *data)
 	priv->uv_check->data = service;
 	HB_GUARD_CLEANUP(ret = uv_check_start(priv->uv_check, on_check_cb));
 
+	HB_GUARD_CLEANUP(ret = uv_signal_init(priv->uv_loop, priv->uv_signal));
+	priv->uv_signal->data = service;
+	HB_GUARD_CLEANUP(ret = uv_signal_start_oneshot(priv->uv_signal, on_sigint_cb, SIGINT));
 
 	// tcp listener
 	HB_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, priv->tcp_handle));
@@ -160,7 +161,7 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
 	HB_GUARD_CLEANUP(hb_endpoint_set(&service->host_listen, ipstr, port));
 	HB_GUARD_CLEANUP(hb_endpoint_get_string(&service->host_listen, ipbuf, 255));
 	HB_GUARD_CLEANUP(hb_thread_launch(&service->thread_io, tcp_service_io_thread, service));
-	hb_log_info("Listening on %s", ipbuf);
+	hb_log_trace("Listening on %s", ipbuf);
 
 	return HB_SUCCESS;
 
@@ -185,6 +186,17 @@ int tcp_service_stop(tcp_service_t *service)
 	return HB_SUCCESS;
 }
 
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_stop_signal(tcp_service_t *service)
+{
+	assert(service);
+	tcp_service_state_t state = tcp_service_state(service);
+	HB_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
+	tcp_service_set_state(service, TCP_SERVICE_STOPPING);
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
 tcp_service_state_t tcp_service_state(tcp_service_t *service)
 {
 	return hb_atomic_load(&service->state);

@@ -31,6 +31,11 @@
 #define HB_SEND_NOBUF -302
 #define HB_SEND_PUSH -303
 
+#define HB_RECV_ERROR -400
+#define HB_RECV_EBUF -401
+#define HB_RECV_EVTPOP -402
+#define HB_RECV_EVTPUSH -402
+
 #define HB_ASSERT(expr) assert(expr)
 #define HB_GUARD(expr) if ((expr)) return HB_ERROR
 #define HB_GUARD_NULL(expr) if (!(expr)) return HB_ERROR
