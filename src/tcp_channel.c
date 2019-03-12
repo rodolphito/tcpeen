@@ -2,6 +2,9 @@
 
 #include "hb/error.h"
 #include "hb/allocator.h"
+#include "hb/tcp_service.h"
+#include "hb/buffer.h"
+#include "hb/buffer_pool.h"
 
 
 // --------------------------------------------------------------------------------------------------------------
@@ -49,6 +52,20 @@ cleanup:
 	out_span->ptr = NULL;
 	out_span->len = 0;
 	return HB_ERROR;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_channel_buffer_swap(tcp_channel_t *channel)
+{
+	assert(channel && channel->read_buffer);
+	
+	hb_buffer_t *prev_buffer = channel->read_buffer;
+	HB_GUARD(hb_buffer_pool_pop_back(&channel->service->pool_read, &channel->read_buffer));
+	if (hb_buffer_read_length(prev_buffer)) {
+		HB_GUARD(hb_buffer_write_buffer(channel->read_buffer, prev_buffer, 0));
+	}
+
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

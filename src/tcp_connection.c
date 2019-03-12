@@ -51,49 +51,73 @@ void on_tcp_recv_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 
 	tcp_conn_t *conn = (tcp_conn_t *)stream->data;
 
-	// TODO: determine if 0 bytes is a graceful close which is usually standard
-	if (nread >= 0) {
-		struct aws_byte_cursor bc = aws_byte_cursor_from_array(buf->base, nread);
-		while (1) {
-			if (!aws_byte_cursor_read_be32(&bc, &msg_len)) break;
-			if (!aws_byte_cursor_read_be64(&bc, &msg_id)) break;
-			if (!aws_byte_cursor_read_be64(&bc, &latency)) break;
 
-			msg_remaining = msg_len - 16;
-			aws_byte_cursor_advance(&bc, msg_remaining);
-
-			latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
-
-			//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
-			const uint64_t expected = (conn->last_recv_msg_id + 1);
-			if (msg_id != expected) {
-				hb_log_warning("total len: %zd -- span len: %u -- expected id: %zu but recvd id: %zu", nread, msg_len, expected, msg_id);
-			} else {
-				conn->last_recv_msg_id = expected;
-				//hb_log_debug("total len: %zd -- span len: %u -- id match: %zu", nread, msg_len, msg_id);
-			}
-		}
-
-		conn->latency_total += latency;
-		if (latency > conn->latency_max) {
-			conn->latency_max = latency;
-		}
-
-		conn->tstamp_last_msg = cur_ticks;
-		conn->recv_msgs++;
-		conn->recv_bytes += nread;
-		conn->ctx->recv_msgs++;
-		conn->ctx->recv_bytes += nread;
-	} else {
-		hb_log_uv_error((int)nread);
-		should_close = 1;
+	if (nread < 0) {
 		conn->read_err = (int)nread;
+		should_close = 1;
+		goto cleanup;
+	} else if (nread == 0) {
+		goto cleanup;
 	}
 
+	HB_GUARD_CLEANUP(hb_buffer_write(conn->next_buffer, buf->base, nread));
+	int processing = 1;
+	while (processing) {
+		if (conn->read_state == TCP_CHANNEL_READ_HEADER) {
+			if (hb_buffer_read_length(conn->next_buffer) < sizeof(uint32_t)) {
+				processing = 0;
+			} else {
+				HB_GUARD_CLEANUP(hb_buffer_read_be32(conn->next_buffer, &conn->next_payload_len));
+				//hb_log_trace("next payload: %u", conn->next_payload_len);
+				conn->read_state = TCP_CHANNEL_READ_PAYLOAD;
+			}
+		} else if (conn->read_state == TCP_CHANNEL_READ_PAYLOAD) {
+			if (hb_buffer_read_length(conn->next_buffer) < conn->next_payload_len) {
+				processing = 0;
+			} else {
+				HB_GUARD_CLEANUP(hb_buffer_read_be64(conn->next_buffer, &msg_id));
+				HB_GUARD_CLEANUP(hb_buffer_read_be64(conn->next_buffer, &latency));
+
+				msg_remaining = conn->next_payload_len - 16;
+				HB_GUARD_CLEANUP(hb_buffer_read_skip(conn->next_buffer, msg_remaining));
+
+				latency = aws_timestamp_convert(cur_ticks - latency, AWS_TIMESTAMP_NANOS, AWS_TIMESTAMP_MILLIS, 0);
+
+				//hb_log_debug("len: %u, id: %zu, latency: %zu", msg_len, msg_id, latency);
+				const uint64_t expected = (conn->last_recv_msg_id + 1);
+				if (msg_id != expected) {
+					hb_log_warning("total len: %zd -- span len: %u -- expected id: %zu but recvd id: %zu", nread, conn->next_payload_len, expected, msg_id);
+				} else {
+					conn->last_recv_msg_id = expected;
+					//hb_log_debug("total len: %zd -- span len: %u -- id match: %zu", nread, conn->next_payload_len, msg_id);
+				}
+
+				conn->read_state = TCP_CHANNEL_READ_HEADER;
+			}
+		}
+	}
+
+	if (!hb_buffer_read_length(conn->next_buffer)) {
+		hb_buffer_reset(conn->next_buffer);
+	}
+
+	conn->latency_total += latency;
+	if (latency > conn->latency_max) {
+		conn->latency_max = latency;
+	}
+
+	conn->tstamp_last_msg = cur_ticks;
+	conn->recv_msgs++;
+	conn->recv_bytes += nread;
+	conn->ctx->recv_msgs++;
+	conn->ctx->recv_bytes += nread;
+
+cleanup:
 	HB_MEM_RELEASE(buf->base);
 
-	if (conn->state != CS_CONNECTED) should_close = 1;
-	if (should_close) tcp_conn_disconnect(conn);
+	if (should_close) {
+		tcp_conn_disconnect(conn);
+	}
 }
 
 // this callback is registered by uv_tcp_connect (for client -> server connections)
@@ -129,6 +153,36 @@ cleanup:
 	return;
 }
 
+void on_tcp_write_frag_cb(uv_write_t *req, int status)
+{
+	int should_close = 0;
+	uint64_t cur_ticks = hb_tstamp();
+
+	tcp_write_req_t *write_req = (tcp_write_req_t *)req;
+	tcp_conn_t *conn = req->data;
+	uv_buf_t *wbuf = &write_req->buf;
+
+	if (status) {
+		//hb_log_uv_error(status);
+		should_close = 1;
+		conn->write_err = status;
+	} else if (!wbuf->len) {
+	} else {
+		if (!conn->tstamp_first_msg) {
+			conn->tstamp_first_msg = cur_ticks;
+		}
+		conn->send_msgs++;
+		conn->send_bytes += wbuf->len;
+		conn->ctx->send_msgs++;
+		conn->ctx->send_bytes += wbuf->len;
+	}
+
+	HB_MEM_RELEASE(req);
+
+	if (conn->state != CS_CONNECTED) should_close = 1;
+	if (should_close) tcp_conn_disconnect(conn);
+}
+
 // this callback is registered by uv_write
 // flow: tcp_write_begin:uv_write -> on_write_cb
 // --------------------------------------------------------------------------------------------------------------
@@ -140,10 +194,6 @@ void on_tcp_write_cb(uv_write_t *req, int status)
 	tcp_write_req_t *write_req = (tcp_write_req_t *)req;
 	tcp_conn_t *conn = req->data;
 	uv_buf_t *wbuf = &write_req->buf;
-
-#ifdef UV_THREAD_HANDLE_DEBUG
-	printf("%s -- %lu -- uv_write_t: %p -- handle: %p -- buf: %p\n", __FUNCTION__, uv_thread_self(), req, req->handle, wbuf->base);
-#endif
 
 	if (status) {
 		//hb_log_uv_error(status);
@@ -229,13 +279,15 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 
 	//hb_log_trace("sending: %d -> %zu -- %zu -- %zu", len, bb_data.len, conn->current_msg_id, cur_ticks);
 
+	int fake_frag = 0;
+
 	tcp_write_req_t *write_req = HB_MEM_ACQUIRE(sizeof(*write_req));
 	if (!write_req) {
 		hb_log_uv_error(ENOMEM);
 		return;
 	}
 	write_req->req.data = conn;
-	write_req->buf = uv_buf_init(bb_data.buffer, UV_BUFLEN_CAST(bb_data.len));
+	write_req->buf = uv_buf_init(bb_data.buffer, UV_BUFLEN_CAST(bb_data.len - fake_frag));
 
 	if ((ret = uv_write((uv_write_t *)write_req, (uv_stream_t *)tcp_handle, &write_req->buf, 1, on_tcp_write_cb))) {
 		hb_log_uv_error(ret);
@@ -245,6 +297,26 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 
 		tcp_conn_disconnect(conn);
 		return;
+	}
+
+	if (fake_frag) {
+		//write_req = HB_MEM_ACQUIRE(sizeof(*write_req));
+		//if (!write_req) {
+		//	hb_log_uv_error(ENOMEM);
+		//	return;
+		//}
+		//write_req->req.data = conn;
+		//write_req->buf = uv_buf_init(bb_data.buffer + (bb_data.len - fake_frag), UV_BUFLEN_CAST(fake_frag));
+
+		//if ((ret = uv_write((uv_write_t *)write_req, (uv_stream_t *)tcp_handle, &write_req->buf, 1, on_tcp_write_frag_cb))) {
+		//	hb_log_uv_error(ret);
+
+		//	HB_MEM_RELEASE(write_req->buf.base);
+		//	HB_MEM_RELEASE(write_req);
+
+		//	tcp_conn_disconnect(conn);
+		//	return;
+		//}
 	}
 }
 
@@ -350,12 +422,17 @@ void tcp_conn_delete(tcp_conn_t **pconn)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_conn_init(tcp_ctx_t *ctx, tcp_conn_t *conn)
 {
-	if (!conn) return EINVAL;
+	assert(conn && ctx);
 	
 	memset(conn, 0, sizeof(tcp_conn_t));
 	conn->ctx = ctx;
+	conn->read_state = TCP_CHANNEL_READ_HEADER;
 
-	return 0;
+	HB_GUARD_NULL(conn->next_buf = HB_MEM_ACQUIRE(65535 * 2));
+	HB_GUARD_NULL(conn->next_buffer = HB_MEM_ACQUIRE(sizeof(*conn->next_buffer)));
+	HB_GUARD(hb_buffer_setup(conn->next_buffer, conn->next_buf, 65535 * 2));
+
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

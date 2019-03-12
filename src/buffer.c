@@ -7,11 +7,22 @@
 
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_read(hb_buffer_t *buffer, uint8_t *out_buffer, size_t len)
+int hb_buffer_setup(hb_buffer_t *buffer, uint8_t *src, size_t capacity)
+{
+	assert(buffer && src && capacity);
+
+	buffer->pool = NULL;
+	buffer->buf = aws_byte_buf_from_empty_array(src, capacity);
+	buffer->pos = aws_byte_cursor_from_buf(&buffer->buf);
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_read(hb_buffer_t *buffer, uint8_t *dst_buffer, size_t len)
 {
 	assert(buffer);
-	assert(out_buffer);
-	if (!aws_byte_cursor_read(&buffer->pos, out_buffer, len)) return HB_ERROR;
+	assert(dst_buffer);
+	if (!aws_byte_cursor_read(&buffer->pos, dst_buffer, len)) return HB_ERROR;
 	return HB_SUCCESS;
 }
 
@@ -74,10 +85,28 @@ int hb_buffer_read_be64(hb_buffer_t *buffer, uint64_t *out_val)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_buffer_write(hb_buffer_t *buffer, uint8_t *out_buffer, size_t len)
+int hb_buffer_read_buffer(hb_buffer_t *buffer, hb_buffer_t *dst_buffer, size_t len)
+{
+	assert(buffer && dst_buffer);
+	
+	if (!len) {
+		len = buffer->pos.len;
+	} else if (len > buffer->pos.len) {
+		return HB_ERROR;
+	}
+
+	HB_GUARD(hb_buffer_write(dst_buffer, buffer->pos.ptr, len));
+	aws_byte_cursor_advance(&buffer->pos, len);
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_write(hb_buffer_t *buffer, uint8_t *src_buffer, size_t len)
 {
 	assert(buffer);
-	if (!aws_byte_buf_write(&buffer->buf, out_buffer, len)) return HB_ERROR;
+	if (!aws_byte_buf_write(&buffer->buf, src_buffer, len)) return HB_ERROR;
+	buffer->pos.len += len;
 	return HB_SUCCESS;
 }
 
@@ -86,6 +115,7 @@ int hb_buffer_write_u8(hb_buffer_t *buffer, uint8_t val)
 {
 	assert(buffer);
 	if (!aws_byte_buf_write_u8(&buffer->buf, val)) return HB_ERROR;
+	buffer->pos.len += sizeof(val);
 	return HB_SUCCESS;
 }
 
@@ -94,6 +124,7 @@ int hb_buffer_write_be16(hb_buffer_t *buffer, uint16_t val)
 {
 	assert(buffer);
 	if (!aws_byte_buf_write_be16(&buffer->buf, val)) return HB_ERROR;
+	buffer->pos.len += sizeof(val);
 	return HB_SUCCESS;
 }
 
@@ -102,6 +133,7 @@ int hb_buffer_write_be32(hb_buffer_t *buffer, uint32_t val)
 {
 	assert(buffer);
 	if (!aws_byte_buf_write_be32(&buffer->buf, val)) return HB_ERROR;
+	buffer->pos.len += sizeof(val);
 	return HB_SUCCESS;
 }
 
@@ -110,7 +142,14 @@ int hb_buffer_write_be64(hb_buffer_t *buffer, uint64_t val)
 {
 	assert(buffer);
 	if (!aws_byte_buf_write_be64(&buffer->buf, val)) return HB_ERROR;
+	buffer->pos.len += sizeof(val);
 	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int hb_buffer_write_buffer(hb_buffer_t *buffer, hb_buffer_t *src_buffer, size_t len)
+{
+	return hb_buffer_read_buffer(src_buffer, buffer, len);
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -205,6 +244,7 @@ void *hb_buffer_read_ptr(hb_buffer_t *buffer)
 int hb_buffer_release(hb_buffer_t *buffer)
 {
 	assert(buffer);
-	assert(buffer->pool);
+	HB_GUARD_NULL(buffer->pool);
+
 	return hb_buffer_pool_push(buffer->pool, buffer);
 }

@@ -34,7 +34,8 @@
 #define HB_RECV_ERROR -400
 #define HB_RECV_EBUF -401
 #define HB_RECV_EVTPOP -402
-#define HB_RECV_EVTPUSH -402
+#define HB_RECV_EVTPUSH -403
+#define HB_RECV_E2BIG -404
 
 #define HB_ASSERT(expr) assert(expr)
 #define HB_GUARD(expr) if ((expr)) return HB_ERROR

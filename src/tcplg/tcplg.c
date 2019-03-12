@@ -291,8 +291,8 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 #else
-	cmdline_args.clients = 1;
-	cmdline_args.rate = 1;
+	cmdline_args.clients = 112;
+	cmdline_args.rate = 120;
 	cmdline_args.message = "I love eating potatoes :D";
 	cmdline_args.msglen = (int)strlen(cmdline_args.message);
 	cmdline_args.prefix = 32;

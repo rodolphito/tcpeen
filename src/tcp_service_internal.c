@@ -114,7 +114,7 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 	}
 
 	buf->base = hb_buffer_write_ptr(channel->read_buffer);
-	buf->len = UV_BUFLEN_CAST(hb_buffer_capacity(channel->read_buffer));
+	buf->len = UV_BUFLEN_CAST(hb_buffer_remaining(channel->read_buffer));
 
 	return;
 
@@ -215,6 +215,13 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 				break;
 				//hb_log_debug("read header len: %u", header_len);
 			}
+
+			if (channel->next_payload_len > HB_SERVICE_MAX_READ) {
+				hb_log_trace("invalid payload len: %zu", channel->next_payload_len);
+				ret = HB_RECV_E2BIG;
+				close_channel = 1;
+				goto cleanup;
+			}
 			break;
 		case TCP_CHANNEL_READ_PAYLOAD:
 			if (tcp_channel_read_payload(channel, &span[span_idx])) {
@@ -224,7 +231,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 			}
 
 			if (++span_idx >= HB_EVENT_MAX_SPANS_PER_READ) {
-				hb_log_warning("maxed out reading %zd bytes of spans on channel: %zu", nread, channel->id);
+				//hb_log_warning("maxed out reading %zd bytes of spans on channel: %zu", nread, channel->id);
 				//stalled_or_maxed = 1;
 				span_idx = HB_EVENT_MAX_SPANS_PER_READ - 1;
 				break;
@@ -248,9 +255,15 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 			evt->span[span_idx].len = 0;
 		}
 
+		
+		const size_t read_remaining = hb_buffer_read_length(channel->read_buffer);
+		if (read_remaining) {
+			hb_log_trace("remaining buffer: %zu", read_remaining);
+		}
+		tcp_channel_buffer_swap(channel);
+
 		ret = HB_RECV_EVTPUSH;
 		HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
-		channel->read_buffer = NULL;
 	}
 
 	/* successful recv */

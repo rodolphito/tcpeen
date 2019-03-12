@@ -56,6 +56,7 @@ tcp_channel_state_t tcp_channel_state(tcp_channel_t *channel);
 tcp_channel_read_state_t tcp_channel_read_state(tcp_channel_t *channel);
 int tcp_channel_read_header(tcp_channel_t *channel, uint32_t *out_len);
 int tcp_channel_read_payload(tcp_channel_t *channel, hb_buffer_span_t *out_span);
+int tcp_channel_buffer_swap(tcp_channel_t *channel);
 
 int tcp_channel_list_setup(tcp_channel_list_t *list, size_t clients_max);
 int tcp_channel_list_cleanup(tcp_channel_list_t *list);

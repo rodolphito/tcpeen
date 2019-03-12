@@ -8,6 +8,8 @@
 #include "hb/allocator.h"
 #include "hb/endpoint.h"
 #include "hb/tcp_context.h"
+#include "hb/buffer.h"
+#include "hb/tcp_channel.h"
 
 #if _MSC_VER
 #	define UV_BUFLEN_CAST(x) (ULONG)x
@@ -44,6 +46,13 @@ typedef struct tcp_conn_s {
 	uint64_t tstamp_last_msg;
 	uint64_t current_msg_id;
 	uint64_t last_recv_msg_id;
+	uint32_t next_payload_len;
+	uint64_t next_payload_remaining;
+	uint64_t next_msg_id;
+	uint64_t next_latency;
+	uint8_t *next_buf;
+	hb_buffer_t *next_buffer;
+	tcp_channel_read_state_t read_state;
 } tcp_conn_t;
 
 

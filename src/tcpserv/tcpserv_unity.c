@@ -32,7 +32,7 @@ int handle_client_read(tcp_service_t *service, hb_event_client_read_t *evt_read)
 
 		const uint64_t expected_id = channel->last_msg_id + 1;
 		if (msg_id != expected_id) {
-			hb_log_warning("connection: %zu -- msg len: %zu -- id mismatch: %zu - %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), channel->last_msg_id + 1, msg_id);
+			//hb_log_warning("connection: %zu -- msg len: %zu -- id mismatch: %zu - %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), channel->last_msg_id + 1, msg_id);
 		} else {
 			//hb_log_debug("connection: %zu -- msg len: %zu -- id match: %zu", evt_read->client_id, hb_buffer_length(evt_read->hb_buffer), msg_id);
 			channel->last_msg_id = expected_id;
