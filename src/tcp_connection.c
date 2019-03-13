@@ -376,7 +376,7 @@ int tcp_connect_begin(tcp_conn_t *conn, const char *host, int port)
 	connection->data = (void *)conn;
 	conn->state = CS_CONNECTING;
 	if ((ret = uv_tcp_connect(connection, conn->tcp_handle, (const struct sockaddr *)&conn->host_remote.sockaddr, on_tcp_connected_cb))) {
-		hb_log_uv_error(ret);
+		// hb_log_uv_error(ret);
 		goto cleanup;
 	}
 

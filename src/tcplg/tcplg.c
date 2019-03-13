@@ -64,6 +64,7 @@ uint64_t current_ticks = 0;
 uint64_t transmit_ticks = 0;
 double elapsed = 0.0;
 
+int tty_wait_frames = 0;
 char tty_data[1024];
 const char *space_str = "           ";
 const char *pend_str = "Pending Connections: ";
@@ -126,16 +127,14 @@ void on_tick_cb(uv_timer_t *req)
 			conns_made++;
 		}
 
+		buf.len = sprintf(tty_data, "\033[2A\033[1000D%s%zu           \033[1B\033[1000D%s%zu           \033[1B\033[1000D%s%zu           ", pend_str, connecting, fail_str, failed, conn_str, connected);
+		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
+
 		if (connected >= g_num_conns) {
 			elapsed = 0.0;
 			g_appstate++;
 			printf("\n\nTransmitting Data =============================================\n\n\n\n\n");
-		} else {
-
 		}
-
-		buf.len = sprintf(tty_data, "\033[2A\033[1000D%s%zu           \033[1B\033[1000D%s%zu           \033[1B\033[1000D%s%zu           ", pend_str, connecting, fail_str, failed, conn_str, connected);
-		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
 	} else if (phase == 2) {
 		size_t connected = 0, connecting = 0, failed = 0;
 		int conns_made = 0;
@@ -162,8 +161,8 @@ void on_tick_cb(uv_timer_t *req)
 			}
 
 			if (do_connect && conns_made < conns_max) {
-				tcp_connect_begin(&g_tcp_conns[i], cmdline_args.host, cmdline_args.port);
-				conns_made++;
+				// tcp_connect_begin(&g_tcp_conns[i], cmdline_args.host, cmdline_args.port);
+				// conns_made++;
 			} else if (do_send) {
 				tcp_write_begin(g_tcp_conns[i].tcp_handle, cmdline_args.message, cmdline_args.msglen, 0);
 			}
@@ -280,7 +279,7 @@ int main(int argc, char **argv)
 	}
 
 	tty_setmode_success = 1;
-	g_tty_enabled = 0;
+	g_tty_enabled = 1;
 	if (uv_tty_get_winsize(&g_tty, &g_width, &g_height)) {
 		g_tty_enabled = 0;
 	}
