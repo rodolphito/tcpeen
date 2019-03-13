@@ -30,7 +30,8 @@ int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t 
 
 		uint8_t *buf = pool->allocation + ((block_count - 1 - i) * block_size);
 
-		
+		HB_GUARD_CLEANUP(hb_buffer_setup(hb_buffer, buf, block_size));
+		hb_buffer->pool = pool;
 
 		HB_GUARD_CLEANUP(hb_queue_spsc_push(&pool->hb_buffers_free, hb_buffer));
 	}
