@@ -96,7 +96,6 @@ int hb_buffer_read_buffer(hb_buffer_t *buffer, hb_buffer_t *dst_buffer, size_t l
 	}
 
 	HB_GUARD(hb_buffer_write(dst_buffer, buffer->pos.ptr, len));
-	aws_byte_cursor_advance(&buffer->pos, len);
 
 	return HB_SUCCESS;
 }
@@ -204,12 +203,10 @@ int hb_buffer_set_length(hb_buffer_t *buffer, size_t len)
 int hb_buffer_add_length(hb_buffer_t *buffer, size_t len)
 {
 	assert(buffer);
-	if (buffer->buf.capacity - buffer->buf.len >= len) {
-		buffer->buf.len += len;
-		buffer->pos.len += len;
-		return HB_SUCCESS;
-	}
-	return HB_ERROR;
+	HB_GUARD(len > (buffer->buf.capacity - buffer->buf.len));
+	buffer->buf.len += len;
+	buffer->pos.len += len;
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

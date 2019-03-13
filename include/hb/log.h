@@ -63,10 +63,10 @@ typedef enum hb_log_level_e {
 #	define hb_log_file(f) hb_log_set_fp(f);
 #endif
 
-#ifndef HB_BUILD_DEBUG
-#	undef hb_log_trace
-#	define hb_log_trace(...) ((void)0)
-#endif
+//#ifndef HB_BUILD_DEBUG
+//#	undef hb_log_trace
+//#	define hb_log_trace(...) ((void)0)
+//#endif
 
 
 void hb_log_setup(void);

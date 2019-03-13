@@ -200,7 +200,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	recv_msgs++;
 	recv_bytes += nread;
 	ret = HB_RECV_EBUF;
-	HB_GUARD_CLEANUP(hb_buffer_set_length(channel->read_buffer, nread));
+	HB_GUARD_CLEANUP(hb_buffer_add_length(channel->read_buffer, nread));
 
 	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
 	int span_idx = 0;
@@ -217,7 +217,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 			}
 
 			if (channel->next_payload_len > HB_SERVICE_MAX_READ) {
-				hb_log_trace("invalid payload len: %zu", channel->next_payload_len);
+				hb_log_trace("channel: %zu -- invalid payload len: %zu", channel->id, channel->next_payload_len);
 				ret = HB_RECV_E2BIG;
 				close_channel = 1;
 				goto cleanup;
@@ -255,11 +255,6 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 			evt->span[span_idx].len = 0;
 		}
 
-		
-		const size_t read_remaining = hb_buffer_read_length(channel->read_buffer);
-		if (read_remaining) {
-			hb_log_trace("remaining buffer: %zu", read_remaining);
-		}
 		tcp_channel_buffer_swap(channel);
 
 		ret = HB_RECV_EVTPUSH;
