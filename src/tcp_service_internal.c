@@ -202,85 +202,19 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	ret = HB_RECV_EBUF;
 	HB_GUARD_CLEANUP(hb_buffer_add_length(channel->read_buffer, nread));
 
-	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
-	int span_idx = 0;
-	while (tcp_channel_state(channel) == TCP_CHANNEL_OPEN) {
-		int stalled_or_maxed = 0;
-		int header_len = 0;
-
-		switch (tcp_channel_read_state(channel)) {
-		case TCP_CHANNEL_READ_HEADER:
-			if (tcp_channel_read_header(channel, &header_len)) {
-				stalled_or_maxed = 1;
-				break;
-				//hb_log_debug("read header len: %u", header_len);
-			}
-
-			if (channel->next_payload_len > HB_SERVICE_MAX_READ) {
-				hb_log_trace("channel: %zu -- invalid payload len: %zu", channel->id, channel->next_payload_len);
-				ret = HB_RECV_E2BIG;
-				close_channel = 1;
-				goto cleanup;
-			}
-			break;
-		case TCP_CHANNEL_READ_PAYLOAD:
-			if (tcp_channel_read_payload(channel, &span[span_idx])) {
-				stalled_or_maxed = 1;
-				break;
-				//hb_log_debug("read payload: %p -- %u", span[span_idx].ptr, span[span_idx].len);
-			}
-
-			if (++span_idx >= HB_EVENT_MAX_SPANS_PER_READ) {
-				//hb_log_warning("maxed out reading %zd bytes of spans on channel: %zu", nread, channel->id);
-				//stalled_or_maxed = 1;
-				span_idx = HB_EVENT_MAX_SPANS_PER_READ - 1;
-				break;
-			}
-			break;
-		}
-
-		if (stalled_or_maxed) break;
-	}
-
-	if (span_idx) {
-		ret = HB_RECV_EVTPOP;
-		hb_event_client_read_t *evt;
-		HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
+	hb_event_client_read_t *evt;
+	ret = HB_RECV_EVTPOP;
+	HB_GUARD_CLEANUP(hb_event_list_free_pop_read(&channel->service->events, &evt));
 		
-		evt->client_id = channel->id;
-		evt->hb_buffer = channel->read_buffer;
-		memcpy(&evt->span, &span, sizeof(evt->span));
-		if (span_idx < HB_EVENT_MAX_SPANS_PER_READ) {
-			evt->span[span_idx].ptr = NULL;
-			evt->span[span_idx].len = 0;
-		}
+	evt->client_id = channel->id;
+	evt->hb_buffer = channel->read_buffer;
 
-		tcp_channel_buffer_swap(channel);
-
-		ret = HB_RECV_EVTPUSH;
-		HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
-	}
+	ret = HB_RECV_EVTPUSH;
+	HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
 
 	/* successful recv */
 
-	//if (!(work_req = HB_MEM_ACQUIRE(sizeof(*work_req)))) {
-	//	hb_log_uv_error(UV_ENOMEM);
-	//	goto close;
-	//}
-
-	//work_req->uv_req.data = NULL;
-	//work_req->tcp_handle = handle;
-	//work_req->hb_buffer = channel->read_buffer;
-	//work_req->close = 0;
-	//work_req->ret = HB_SUCCESS;
-
-	//channel->read_buffer = NULL;
-
-	//tcp_service_priv_t *service_priv = (tcp_service_priv_t *)channel->service->priv;
-	//if ((ret = uv_queue_work(service_priv->uv_loop, (uv_work_t *)work_req, on_task_process_cb, on_task_complete_cb))) {
-	//	hb_log_uv_error(ret);
-	//	goto close;
-	//}
+	channel->read_buffer = NULL;
 
 	return;
 

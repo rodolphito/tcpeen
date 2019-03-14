@@ -7,14 +7,16 @@
 #include "hb/tcp_service.h"
 
 // ----------------------------------------------------------------------------------------------------------------------------------
-//void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginLoad(IUnityInterfaces* unityInterfaces)
-//{
-//}
+void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginLoad(IUnityInterfaces* unityInterfaces)
+{
+	return;
+}
 
 // ----------------------------------------------------------------------------------------------------------------------------------
-//void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginUnload(void)
-//{
-//}
+void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginUnload(void)
+{
+	return;
+}
 
 
 // TODO: pass back service pointer allowing

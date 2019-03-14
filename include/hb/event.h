@@ -10,7 +10,6 @@
 
 #define HB_EVENT_MAX_SIZE 256
 #define HB_EVENT_PAD_SIZE (HB_EVENT_MAX_SIZE) - sizeof(uint32_t) - sizeof(uint32_t)
-#define HB_EVENT_MAX_SPANS_PER_READ 12
 
 #define HB_EVENT_FIELDS			\
 	uint32_t id;				\
@@ -62,7 +61,6 @@ typedef struct hb_event_client_read_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
 	hb_buffer_t *hb_buffer;
-	hb_buffer_span_t span[HB_EVENT_MAX_SPANS_PER_READ];
 } hb_event_client_read_t;
 
 // IO stats
