@@ -326,7 +326,7 @@ void on_prep_cb(uv_prepare_t *handle)
 	tcp_service_t *service = handle->data;
 	HB_GUARD_NULL_CLEANUP(service);
 
-	while (!hb_queue_spsc_pop_back(&service->write_reqs_ready, &send_req)) {
+	while (!hb_queue_spsc_pop_back(&service->write_reqs_ready, (void **)&send_req)) {
 		assert(send_req);
 
 		if (send_req->channel->state != TCP_CHANNEL_OPEN) {
