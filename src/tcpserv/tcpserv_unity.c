@@ -19,11 +19,6 @@ int handle_client_read(tcp_service_t *service, hb_event_client_read_t *evt_read)
 	hb_buffer_read_reset(evt_read->hb_buffer);
 	HB_GUARD_CLEANUP(ret = tcp_service_send(service, channel, hb_buffer_read_ptr(evt_read->hb_buffer), hb_buffer_read_length(evt_read->hb_buffer)));
 
-	hb_buffer_t *evtbuf = evt_read->hb_buffer;
-	evt_read->hb_buffer = NULL;
-	hb_buffer_pool_push(&service->pool_read, evtbuf);
-	hb_event_list_free_push(&service->events, evt_read);
-
 	return HB_SUCCESS;
 
 cleanup:
@@ -49,7 +44,7 @@ int main(void)
 
 		hb_event_base_t **evt_base;
 		uint64_t evt_count = 0;
-		ret = tcp_service_update(&tcp_service, &evt_base, &evt_count);
+		tcp_service_events_acquire(&tcp_service, &evt_base, &evt_count);
 
 		for (int eidx = 0; eidx < evt_count; eidx++) {
 			switch (evt_base[eidx]->type) {
@@ -64,6 +59,8 @@ int main(void)
 				break;
 			}
 		}
+
+		tcp_service_events_release(&tcp_service);
 	}
 
 	HB_GUARD(tcp_service_stop(&tcp_service));

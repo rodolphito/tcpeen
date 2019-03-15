@@ -51,9 +51,9 @@ void tcp_service_io_thread(void *data)
 	priv->uv_check->data = service;
 	HB_GUARD_CLEANUP(ret = uv_check_start(priv->uv_check, on_check_cb));
 
-	HB_GUARD_CLEANUP(ret = uv_signal_init(priv->uv_loop, priv->uv_signal));
-	priv->uv_signal->data = service;
-	HB_GUARD_CLEANUP(ret = uv_signal_start_oneshot(priv->uv_signal, on_sigint_cb, SIGINT));
+	//HB_GUARD_CLEANUP(ret = uv_signal_init(priv->uv_loop, priv->uv_signal));
+	//priv->uv_signal->data = service;
+	//HB_GUARD_CLEANUP(ret = uv_signal_start_oneshot(priv->uv_signal, on_sigint_cb, SIGINT));
 
 	// tcp listener
 	HB_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, priv->tcp_handle));
@@ -203,19 +203,44 @@ tcp_service_state_t tcp_service_state(tcp_service_t *service)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[], uint64_t *out_count)
+int tcp_service_events_acquire(tcp_service_t *service, hb_event_base_t ***out_evt_base, uint64_t *out_count)
 {
 	assert(service);
 	assert(out_evt_base);
 	assert(out_count);
 
 	*out_evt_base = NULL;
-	*out_count = 0;
-	uint64_t event_count = service->buffer_count;
-	HB_GUARD(hb_event_list_ready_pop_all(&service->events, service->event_updates, &event_count));
+	*out_count = service->event_updates_count = 0;
+	uint64_t count = service->buffer_count;
+	HB_GUARD(hb_event_list_ready_pop_all(&service->events, service->event_updates, &count));
 
 	*out_evt_base = service->event_updates;
-	*out_count = event_count;
+	*out_count = service->event_updates_count = count;
+
+	return HB_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tcp_service_events_release(tcp_service_t *service)
+{
+	assert(service);
+	
+	hb_event_client_read_t *evt_read;
+	for (size_t i = 0; i < service->event_updates_count; i++) {
+		switch (service->event_updates[i]->type) {
+		case HB_EVENT_CLIENT_OPEN:
+			break;
+		case HB_EVENT_CLIENT_CLOSE:
+			break;
+		case HB_EVENT_CLIENT_READ:
+			evt_read = (hb_event_client_read_t *)service->event_updates[i];
+			hb_buffer_pool_push(&service->pool_read, evt_read->hb_buffer);
+			break;
+		default:
+			break;
+		}
+		hb_event_list_free_push(&service->events, service->event_updates[i]);
+	}
 
 	return HB_SUCCESS;
 }

@@ -199,5 +199,5 @@ add_custom_command(
 	POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
 		$<TARGET_FILE:tcpeen_unity>
-		${CMAKE_SOURCE_DIR}/UnityProject/Assets/Plugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>
+		${CMAKE_SOURCE_DIR}/UnityProject/Assets/TCPeenPlugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>
 )

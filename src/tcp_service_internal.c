@@ -208,6 +208,8 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 		
 	evt->client_id = channel->id;
 	evt->hb_buffer = channel->read_buffer;
+	evt->buffer = hb_buffer_read_ptr(channel->read_buffer);
+	evt->len = hb_buffer_read_length(channel->read_buffer);
 
 	ret = HB_RECV_EVTPUSH;
 	HB_GUARD_CLEANUP(hb_event_list_ready_push(&channel->service->events, evt));
@@ -328,7 +330,8 @@ void on_prep_cb(uv_prepare_t *handle)
 		assert(send_req);
 
 		if (send_req->channel->state != TCP_CHANNEL_OPEN) {
-			hb_queue_spsc_push(&service->write_reqs_ready, send_req);
+			hb_buffer_pool_push(&service->pool_write, send_req->buffer);
+			hb_queue_spsc_push(&service->write_reqs_free, send_req);
 			continue;
 		}
 

@@ -53,6 +53,7 @@ int hb_event_list_free_pop_error(hb_event_list_t *list, hb_event_error_t **out_e
 	*out_evt = NULL;
 	HB_GUARD(hb_queue_spsc_pop_back(&list->hb_events_free, (void **)out_evt));
 	(*out_evt)->type = HB_EVENT_IOERROR;
+	(*out_evt)->hb_buffer = NULL;
 	
 	return HB_SUCCESS;
 }
@@ -79,6 +80,7 @@ int hb_event_list_free_pop_close(hb_event_list_t *list, hb_event_client_close_t 
 	*out_evt = NULL;
 	HB_GUARD(hb_queue_spsc_pop_back(&list->hb_events_free, (void **)out_evt));
 	(*out_evt)->type = HB_EVENT_CLIENT_CLOSE;
+	(*out_evt)->hb_buffer = NULL;
 
 	return HB_SUCCESS;
 }
@@ -92,6 +94,7 @@ int hb_event_list_free_pop_read(hb_event_list_t *list, hb_event_client_read_t **
 	*out_evt = NULL;
 	HB_GUARD(hb_queue_spsc_pop_back(&list->hb_events_free, (void **)out_evt));
 	(*out_evt)->type = HB_EVENT_CLIENT_READ;
+	(*out_evt)->hb_buffer = NULL;
 
 	return HB_SUCCESS;
 }

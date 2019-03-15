@@ -191,12 +191,10 @@ size_t hb_buffer_read_length(hb_buffer_t *buffer)
 int hb_buffer_set_length(hb_buffer_t *buffer, size_t len)
 {
 	assert(buffer);
-	if (buffer->buf.capacity - buffer->buf.len >= len) {
-		buffer->buf.len = len;
-		buffer->pos.len = len;
-		return HB_SUCCESS;
-	}
-	return HB_ERROR;
+	HB_GUARD(len > (buffer->buf.capacity - buffer->buf.len));
+	buffer->buf.len = len;
+	buffer->pos.len = len;
+	return HB_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

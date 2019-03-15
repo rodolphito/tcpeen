@@ -61,6 +61,7 @@ typedef struct tcp_service_s {
 
 	/* pointer array of events to pull from the event queue */
 	hb_event_base_t **event_updates;
+	uint64_t event_updates_count;
 
 	/* to how many buffers, event updates, are we bounded */
 	uint64_t buffer_count;
@@ -88,7 +89,8 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
 int tcp_service_stop_signal(tcp_service_t *service);
 tcp_service_state_t tcp_service_state(tcp_service_t *service);
-int tcp_service_update(tcp_service_t *service, hb_event_base_t **out_evt_base[], uint64_t *out_count);
+int tcp_service_events_acquire(tcp_service_t *service, hb_event_base_t ***out_evt_base, uint64_t *out_count);
+int tcp_service_events_release(tcp_service_t *service);
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);
 
 int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);

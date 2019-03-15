@@ -28,12 +28,11 @@ tcp_service_t tcp_service = {
 
 int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_setup(uint64_t max_clients)
 {
-	HB_GUARD(tcp_service.priv);
 	HB_GUARD(tcp_service_setup(&tcp_service));
 	return HB_SUCCESS;
 }
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_cleanup()
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_cleanup(void)
 {
 	HB_GUARD_NULL(tcp_service.priv);
 	tcp_service_cleanup(&tcp_service);
@@ -48,32 +47,40 @@ int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_start(const ch
 	return HB_SUCCESS;
 }
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_stop()
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_stop(void)
 {
 	HB_GUARD_NULL(tcp_service.priv);
 	HB_GUARD(tcp_service_stop(&tcp_service));
 	return HB_SUCCESS;
 }
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_update(hb_event_base_t **out_heap_base, uint64_t *out_block_count, uint8_t *out_state)
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_events_acquire(hb_event_base_t **out_evt_ptr_arr[], uint64_t *out_evt_count)
 {
 	HB_GUARD_NULL(tcp_service.priv);
-	HB_GUARD_NULL(out_heap_base);
-	HB_GUARD_NULL(out_block_count);
-	HB_GUARD_NULL(out_state);
+	HB_GUARD_NULL(out_evt_ptr_arr);
+	HB_GUARD_NULL(out_evt_count);
 	
-	HB_GUARD(tcp_service_update(&tcp_service, &out_heap_base, out_block_count));
+	HB_GUARD(tcp_service_events_acquire(&tcp_service, out_evt_ptr_arr, out_evt_count));
 
 	return HB_SUCCESS;
 }
 
-int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_send(uint64_t client_id, void *buffer, uint64_t length)
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_events_release(void)
+{
+	HB_GUARD_NULL(tcp_service.priv);
+	HB_GUARD(tcp_service_events_release(&tcp_service));
+	return HB_SUCCESS;
+}
+
+int32_t UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API tcpeen_service_send(uint64_t client_id, uint8_t *buffer, uint64_t length)
 {
 	HB_GUARD_NULL(tcp_service.priv);
 	HB_GUARD_NULL(buffer);
 	HB_GUARD_NULL(length);
 
-	//HB_GUARD(tcp_service_send(&tcp_service, client_id, buffer, length));
+	tcp_channel_t *channel;
+	HB_GUARD(tcp_channel_list_get(&tcp_service.channel_list, client_id, &channel));
+	HB_GUARD(tcp_service_send(&tcp_service, channel, buffer, length));
 
 	return HB_SUCCESS;
 }

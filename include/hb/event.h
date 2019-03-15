@@ -60,6 +60,8 @@ typedef struct hb_event_client_close_s {
 typedef struct hb_event_client_read_s {
 	HB_EVENT_FIELDS
 	uint64_t client_id;
+	uint8_t *buffer;
+	size_t len;
 	hb_buffer_t *hb_buffer;
 } hb_event_client_read_t;
 
