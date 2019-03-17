@@ -7,22 +7,22 @@
 #include "uv.h"
 
 
-int handle_client_read(tcp_service_t *service, hb_event_client_read_t *evt_read)
+int handle_client_read(tcp_service_t *service, tn_event_client_read_t *evt_read)
 {
 	int ret;
 	tcp_channel_t *channel;
 
-	ret = HB_EVENT_NOCHAN;
-	HB_GUARD_CLEANUP(tcp_channel_list_get(&service->channel_list, evt_read->client_id, &channel));
+	ret = TN_EVENT_NOCHAN;
+	TN_GUARD_CLEANUP(tcp_channel_list_get(&service->channel_list, evt_read->client_id, &channel));
 	assert(channel);
 
-	hb_buffer_read_reset(evt_read->hb_buffer);
-	HB_GUARD_CLEANUP(ret = tcp_service_send(service, channel, hb_buffer_read_ptr(evt_read->hb_buffer), hb_buffer_read_length(evt_read->hb_buffer)));
+	tn_buffer_read_reset(evt_read->tn_buffer);
+	TN_GUARD_CLEANUP(ret = tcp_service_send(service, channel, tn_buffer_read_ptr(evt_read->tn_buffer), tn_buffer_read_length(evt_read->tn_buffer)));
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 
 cleanup:
-	if (ret) hb_log_error("failed to process read event: %d", ret);
+	if (ret) tn_log_error("failed to process read event: %d", ret);
 	return ret;
 }
 
@@ -34,26 +34,26 @@ int main(void)
 		.priv = NULL,
 	};
 
-	HB_GUARD(tcp_service_setup(&tcp_service));
+	TN_GUARD(tcp_service_setup(&tcp_service));
 
-	HB_GUARD(tcp_service_start(&tcp_service, "0.0.0.0", 7777));
+	TN_GUARD(tcp_service_start(&tcp_service, "0.0.0.0", 7777));
 
 	while (tcp_service_state(&tcp_service) != TCP_SERVICE_STOPPING) {
 		// emulate 60 fps tick rate on Unity main thread
-		hb_thread_sleep_ms(16);
+		tn_thread_sleep_ms(16);
 
-		hb_event_base_t **evt_base;
+		tn_event_base_t **evt_base;
 		uint64_t evt_count = 0;
 		tcp_service_events_acquire(&tcp_service, &evt_base, &evt_count);
 
 		for (int eidx = 0; eidx < evt_count; eidx++) {
 			switch (evt_base[eidx]->type) {
-			case HB_EVENT_CLIENT_OPEN:
+			case TN_EVENT_CLIENT_OPEN:
 				break;
-			case HB_EVENT_CLIENT_CLOSE:
+			case TN_EVENT_CLIENT_CLOSE:
 				break;
-			case HB_EVENT_CLIENT_READ:
-				ret = handle_client_read(&tcp_service, (hb_event_client_read_t *)evt_base[eidx]);
+			case TN_EVENT_CLIENT_READ:
+				ret = handle_client_read(&tcp_service, (tn_event_client_read_t *)evt_base[eidx]);
 				break;
 			default:
 				break;
@@ -63,7 +63,7 @@ int main(void)
 		tcp_service_events_release(&tcp_service);
 	}
 
-	HB_GUARD(tcp_service_stop(&tcp_service));
+	TN_GUARD(tcp_service_stop(&tcp_service));
 
 	tcp_service_cleanup(&tcp_service);
 

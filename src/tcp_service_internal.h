@@ -1,5 +1,5 @@
-#ifndef HB_TCP_SERVICE_INTERNAL_H
-#define HB_TCP_SERVICE_INTERNAL_H
+#ifndef TN_TCP_SERVICE_INTERNAL_H
+#define TN_TCP_SERVICE_INTERNAL_H
 
 #include <stdint.h>
 
@@ -22,7 +22,7 @@ typedef struct tcp_service_write_req_s {
 	uv_write_t uv_req;
 	uv_buf_t uv_buf;
 	tcp_channel_t *channel;
-	hb_buffer_t *buffer;
+	tn_buffer_t *buffer;
 	uint64_t id;
 } tcp_service_write_req_t;
 

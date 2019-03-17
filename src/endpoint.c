@@ -5,7 +5,7 @@
 #include "hb/error.h"
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_get_string(hb_endpoint_t *endpoint, char *buf, int buf_len)
+int tn_endpoint_get_string(tn_endpoint_t *endpoint, char *buf, int buf_len)
 {
 	uint16_t port = 0;
 	memset(buf, 0, buf_len);
@@ -23,72 +23,72 @@ int hb_endpoint_get_string(hb_endpoint_t *endpoint, char *buf, int buf_len)
 		uv_ip4_name(sa, ipbuf, 255);
 		port = ntohs(sa->sin_port);
 	} else {
-		return HB_ERROR;
+		return TN_ERROR;
 	}
 
 	sprintf(buf, "%s:%u", ipbuf, port);
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_set(hb_endpoint_t *endpoint, const char *ip, uint16_t port)
+int tn_endpoint_set(tn_endpoint_t *endpoint, const char *ip, uint16_t port)
 {
-	if (hb_endpoint_set_ip6(endpoint, ip, port)) {
-		return hb_endpoint_set_ip4(endpoint, ip, port);
+	if (tn_endpoint_set_ip6(endpoint, ip, port)) {
+		return tn_endpoint_set_ip4(endpoint, ip, port);
 	}
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_set_ip4(hb_endpoint_t *endpoint, const char *ip, uint16_t port)
+int tn_endpoint_set_ip4(tn_endpoint_t *endpoint, const char *ip, uint16_t port)
 {
 	int ret;
 
-	if (!endpoint) return HB_ERROR;
-	if (!ip) return HB_ERROR;
+	if (!endpoint) return TN_ERROR;
+	if (!ip) return TN_ERROR;
 
 	memset(endpoint, 0, sizeof(*endpoint));
-	if ((ret = uv_ip4_addr(ip, port, (struct sockaddr_in *)&endpoint->sockaddr))) return HB_ERROR;
-	endpoint->type = HB_ENDPOINT_TYPE_IPV4;
+	if ((ret = uv_ip4_addr(ip, port, (struct sockaddr_in *)&endpoint->sockaddr))) return TN_ERROR;
+	endpoint->type = TN_ENDPOINT_TYPE_IPV4;
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_set_ip6(hb_endpoint_t *endpoint, const char *ip, uint16_t port)
+int tn_endpoint_set_ip6(tn_endpoint_t *endpoint, const char *ip, uint16_t port)
 {
 	int ret;
 
-	if (!endpoint) return HB_ERROR;
-	if (!ip) return HB_ERROR;
+	if (!endpoint) return TN_ERROR;
+	if (!ip) return TN_ERROR;
 
 	memset(endpoint, 0, sizeof(*endpoint));
-	if ((ret = uv_ip6_addr(ip, port, (struct sockaddr_in6 *)&endpoint->sockaddr))) return HB_ERROR;
-	endpoint->type = HB_ENDPOINT_TYPE_IPV6;
+	if ((ret = uv_ip6_addr(ip, port, (struct sockaddr_in6 *)&endpoint->sockaddr))) return TN_ERROR;
+	endpoint->type = TN_ENDPOINT_TYPE_IPV6;
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_endpoint_convert_from(hb_endpoint_t *endpoint, void *sockaddr_void)
+int tn_endpoint_convert_from(tn_endpoint_t *endpoint, void *sockaddr_void)
 {
-	if (!endpoint) return HB_ERROR;
-	if (!sockaddr_void) return HB_ERROR;
+	if (!endpoint) return TN_ERROR;
+	if (!sockaddr_void) return TN_ERROR;
 
 	struct sockaddr_storage *sockaddr = sockaddr_void;
 
 	memset(endpoint, 0, sizeof(*endpoint));
 	if (sockaddr->ss_family == AF_INET6) {
 		memcpy(&endpoint->sockaddr, (struct sockaddr_in6 *)sockaddr, sizeof(struct sockaddr_in6));
-		endpoint->type = HB_ENDPOINT_TYPE_IPV6;
+		endpoint->type = TN_ENDPOINT_TYPE_IPV6;
 	} else if (sockaddr->ss_family == AF_INET) {
 		memcpy(&endpoint->sockaddr, (struct sockaddr_in *)sockaddr, sizeof(struct sockaddr_in));
-		endpoint->type = HB_ENDPOINT_TYPE_IPV4;
+		endpoint->type = TN_ENDPOINT_TYPE_IPV4;
 	} else {
-		return HB_ERROR;
+		return TN_ERROR;
 	}
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 

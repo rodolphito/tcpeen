@@ -81,10 +81,10 @@ const char *dropped_str = "Dropped Connections: ";
 void on_tick_cb(uv_timer_t *req)
 {
 	if (!start_ticks) {
-		start_ticks = hb_tstamp();
+		start_ticks = tn_tstamp();
 	}
 
-	current_ticks = hb_tstamp();
+	current_ticks = tn_tstamp();
 	uint64_t tick_diff = (current_ticks - start_ticks);
 	if (tick_diff < transmit_ticks) {
 		return;
@@ -250,9 +250,9 @@ int main(int argc, char **argv)
 	int ret;
 	int tty_setmode_success = 0;
 
-	g_loop = (uv_loop_t *)HB_MEM_ACQUIRE(sizeof(uv_loop_t));
+	g_loop = (uv_loop_t *)TN_MEM_ACQUIRE(sizeof(uv_loop_t));
 	if ((ret = uv_loop_init(g_loop))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 		goto cleanup;
 	}
 
@@ -261,21 +261,21 @@ int main(int argc, char **argv)
 	};
 
 	if (!(g_tcp_ctx = tcp_context_new())) {
-		hb_log_uv_error(ENOMEM);
+		tn_log_uv_error(ENOMEM);
 		goto cleanup;
 	}
 
 	if ((ret = tcp_context_set_config(g_tcp_ctx, &tcp_ctx_config))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 		goto cleanup;
 	}
 
 	if ((ret = uv_tty_init(g_loop, &g_tty, 1, 0))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 	}
 
 	if ((ret = uv_tty_set_mode(&g_tty, 0))) {
-		//hb_log_uv_error(ret);
+		//tn_log_uv_error(ret);
 	}
 
 	tty_setmode_success = 1;
@@ -321,15 +321,15 @@ int main(int argc, char **argv)
 
 
 	g_num_conns = cmdline_args.clients;
-	g_tcp_conns = (tcp_conn_t *)HB_MEM_ACQUIRE(sizeof(tcp_conn_t) * g_num_conns);
+	g_tcp_conns = (tcp_conn_t *)TN_MEM_ACQUIRE(sizeof(tcp_conn_t) * g_num_conns);
 	if (!g_tcp_conns) {
-		hb_log_error("Failed allocating tcp_handles");
+		tn_log_error("Failed allocating tcp_handles");
 		goto cleanup;
 	}
 	memset(g_tcp_conns, 0, sizeof(tcp_conn_t) * g_num_conns);
 	for (int i = 0; i < g_num_conns; i++) {
 		if (tcp_conn_init(g_tcp_ctx, &g_tcp_conns[i])) {
-			hb_log_uv_error(ret);
+			tn_log_uv_error(ret);
 			goto cleanup;
 		}
 	}
@@ -344,22 +344,22 @@ int main(int argc, char **argv)
 	g_recv_bytes = 0;
 
 	if ((ret = uv_timer_init(g_loop, &g_ttytimer))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 		goto cleanup;
 	}
 
 	if ((ret = uv_timer_start(&g_ttytimer, on_tick_cb, 1, 1))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 		goto cleanup;
 	}
 
 	if ((ret = uv_run(g_loop, UV_RUN_DEFAULT))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 
 	}
 
 	if ((ret = uv_loop_close(g_loop))) {
-		hb_log_uv_error(ret);
+		tn_log_uv_error(ret);
 
 		uv_walk(g_loop, shutdown_walk_cb, NULL);
 		if ((ret = uv_loop_close(g_loop)) == 0) {
@@ -376,9 +376,9 @@ cleanup:
 	}
 	printf("\n");
 
-	HB_MEM_RELEASE(g_tcp_conns);
+	TN_MEM_RELEASE(g_tcp_conns);
 	tcp_context_delete(&g_tcp_ctx);
-	HB_MEM_RELEASE(g_loop);
+	TN_MEM_RELEASE(g_loop);
 
 	return 0;
 }

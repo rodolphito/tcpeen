@@ -48,7 +48,7 @@ static const char *level_names[] = {
 	"FATAL",
 };
 
-#ifdef HB_LOG_USE_COLOR
+#ifdef TN_LOG_USE_COLOR
 static const char *level_colors[] = {
 	"\x1b[90m",
 	"\x1b[36m",
@@ -60,32 +60,32 @@ static const char *level_colors[] = {
 #endif
 
 typedef struct aws_mutex aws_mutex_t;
-aws_mutex_t hb_log_mtx;
-FILE *hb_log_fp = NULL;
-int hb_log_ready = 0;
+aws_mutex_t tn_log_mtx;
+FILE *tn_log_fp = NULL;
+int tn_log_ready = 0;
 
-typedef struct hb_log_s {
+typedef struct tn_log_s {
 	void *udata;
-	hb_log_lock_fn lock;
+	tn_log_lock_fn lock;
 	FILE *fp;
 	int level;
 	int quiet;
 	int color;
-} hb_log_t;
+} tn_log_t;
 
-static hb_log_t hb_log_ctx;
+static tn_log_t tn_log_ctx;
 
-//typedef struct aws_thread hb_thread_t;
-//typedef struct aws_condition_variable hb_condition_t;
+//typedef struct aws_thread tn_thread_t;
+//typedef struct aws_condition_variable tn_condition_t;
 //
-//typedef struct hb_log_thread_private_s {
-//	hb_condition_t cond;
-//} hb_log_thread_private_t;
-//hb_thread_t hb_log_thread;
+//typedef struct tn_log_thread_private_s {
+//	tn_condition_t cond;
+//} tn_log_thread_private_t;
+//tn_thread_t tn_log_thread;
 
 
 // private ------------------------------------------------------------------------------------------------------
-void hb_log_lock_impl(void *udata, int lock)
+void tn_log_lock_impl(void *udata, int lock)
 {
 	aws_mutex_t *mtx = (aws_mutex_t *)udata;
 	if (lock) aws_mutex_lock(mtx);
@@ -93,47 +93,47 @@ void hb_log_lock_impl(void *udata, int lock)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_setup(void)
+void tn_log_setup(void)
 {
-#ifndef HB_LOG_DISABLE
-	if (hb_log_ready) return;
-	hb_log_ready = 1;
+#ifndef TN_LOG_DISABLE
+	if (tn_log_ready) return;
+	tn_log_ready = 1;
 
-	memset(&hb_log_ctx, 0, sizeof(hb_log_ctx));
+	memset(&tn_log_ctx, 0, sizeof(tn_log_ctx));
 
-	hb_log_color(1);
+	tn_log_color(1);
 
-	aws_mutex_init(&hb_log_mtx);
-	hb_log_set_udata(&hb_log_mtx);
-	hb_log_set_lock(hb_log_lock_impl);
+	aws_mutex_init(&tn_log_mtx);
+	tn_log_set_udata(&tn_log_mtx);
+	tn_log_set_lock(tn_log_lock_impl);
 
-#	ifdef HB_LOG_FILENAME
-	hb_log_fp = fopen(HB_LOG_FILENAME, "a+");
-	if (hb_log_fp) hb_log_set_fp(hb_log_fp);
+#	ifdef TN_LOG_FILENAME
+	tn_log_fp = fopen(TN_LOG_FILENAME, "a+");
+	if (tn_log_fp) tn_log_set_fp(tn_log_fp);
 #	endif
 
-	hb_log_trace("Application logging started ... ");
+	tn_log_trace("Application logging started ... ");
 
-	atexit(hb_log_cleanup);
+	atexit(tn_log_cleanup);
 #endif
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_cleanup(void)
+void tn_log_cleanup(void)
 {
-#ifndef HB_LOG_DISABLE
-	hb_log_trace("Application logging completed");
+#ifndef TN_LOG_DISABLE
+	tn_log_trace("Application logging completed");
 	
-	if (!hb_log_ready) return;
-	hb_log_ready = 0;
-	aws_mutex_clean_up(&hb_log_mtx);
-	if (hb_log_fp) fclose(hb_log_fp);
+	if (!tn_log_ready) return;
+	tn_log_ready = 0;
+	aws_mutex_clean_up(&tn_log_mtx);
+	if (tn_log_fp) fclose(tn_log_fp);
 #endif
 }
 
-void hb_log_color(int enable)
+void tn_log_color(int enable)
 {
-#ifdef HB_LOG_USE_COLOR
+#ifdef TN_LOG_USE_COLOR
 	if (enable) {
 #	if _MSC_VER
 		HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -153,74 +153,74 @@ void hb_log_color(int enable)
 #	endif
 	}
 
-	hb_log_ctx.color = enable;
+	tn_log_ctx.color = enable;
 #endif
 }
 
 // --------------------------------------------------------------------------------------------------------------
-static void hb_log_lock(void)
+static void tn_log_lock(void)
 {
-	if (hb_log_ctx.lock) {
-		hb_log_ctx.lock(hb_log_ctx.udata, 1);
+	if (tn_log_ctx.lock) {
+		tn_log_ctx.lock(tn_log_ctx.udata, 1);
 	}
 }
 
 // --------------------------------------------------------------------------------------------------------------
-static void hb_log_unlock(void)
+static void tn_log_unlock(void)
 {
-	if (hb_log_ctx.lock) {
-		hb_log_ctx.lock(hb_log_ctx.udata, 0);
+	if (tn_log_ctx.lock) {
+		tn_log_ctx.lock(tn_log_ctx.udata, 0);
 	}
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_set_udata(void *udata)
+void tn_log_set_udata(void *udata)
 {
-	hb_log_ctx.udata = udata;
+	tn_log_ctx.udata = udata;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_set_lock(hb_log_lock_fn fn)
+void tn_log_set_lock(tn_log_lock_fn fn)
 {
-	hb_log_ctx.lock = fn;
+	tn_log_ctx.lock = fn;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_set_fp(FILE *fp)
+void tn_log_set_fp(FILE *fp)
 {
-	hb_log_ctx.fp = fp;
+	tn_log_ctx.fp = fp;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_set_level(int level)
+void tn_log_set_level(int level)
 {
-	hb_log_ctx.level = level;
+	tn_log_ctx.level = level;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_set_quiet(int enable)
+void tn_log_set_quiet(int enable)
 {
-	hb_log_ctx.quiet = enable ? 1 : 0;
+	tn_log_ctx.quiet = enable ? 1 : 0;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_log_log(int level, const char *func, const char *file, int line, uint64_t thread_id, const char *fmt, ...)
+void tn_log_log(int level, const char *func, const char *file, int line, uint64_t thread_id, const char *fmt, ...)
 {
-	if (!hb_log_ready) hb_log_setup();
+	if (!tn_log_ready) tn_log_setup();
 
-	if (level < hb_log_ctx.level) return;
+	if (level < tn_log_ctx.level) return;
 
-	hb_log_lock();
+	tn_log_lock();
 
 	time_t tstamp = time(NULL);
 	struct tm *local_time = localtime(&tstamp);
 
-	if (!hb_log_ctx.quiet) {
+	if (!tn_log_ctx.quiet) {
 		va_list args;
 		char time_buf[32];
 		time_buf[strftime(time_buf, sizeof(time_buf), "%H:%M:%S", local_time)] = '\0';
 
-		if (hb_log_ctx.color) {
+		if (tn_log_ctx.color) {
 			fprintf(stderr, "%s %s%-5s\x1b[0m \x1b[90m%zu:%s:%d - %s: \x1b[0m ", time_buf, level_colors[level], level_names[level], thread_id, file, line, func);
 		} else {
 			fprintf(stderr, "%s %-5s %zu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
@@ -233,17 +233,17 @@ void hb_log_log(int level, const char *func, const char *file, int line, uint64_
 		fflush(stderr);
 	}
 
-	if (hb_log_ctx.fp) {
+	if (tn_log_ctx.fp) {
 		va_list args;
 		char time_buf[64];
 		time_buf[strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", local_time)] = '\0';
-		fprintf(hb_log_ctx.fp, "%s %-5s %zu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
+		fprintf(tn_log_ctx.fp, "%s %-5s %zu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
 		va_start(args, fmt);
-		vfprintf(hb_log_ctx.fp, fmt, args);
+		vfprintf(tn_log_ctx.fp, fmt, args);
 		va_end(args);
-		fprintf(hb_log_ctx.fp, "\n");
-		fflush(hb_log_ctx.fp);
+		fprintf(tn_log_ctx.fp, "\n");
+		fflush(tn_log_ctx.fp);
 	}
 
-	hb_log_unlock();
+	tn_log_unlock();
 }

@@ -1,5 +1,5 @@
-#ifndef HB_TCP_SERVICE_H
-#define HB_TCP_SERVICE_H
+#ifndef TN_TCP_SERVICE_H
+#define TN_TCP_SERVICE_H
 
 #include <stdint.h>
 
@@ -11,8 +11,8 @@
 #include "hb/queue_spsc.h"
 
 
-#define HB_SERVICE_MAX_CLIENTS 10000
-#define HB_SERVICE_MAX_READ 65535
+#define TN_SERVICE_MAX_CLIENTS 10000
+#define TN_SERVICE_MAX_READ 65535
 
 
 // forwards
@@ -42,25 +42,25 @@ typedef struct tcp_service_s {
 	void *priv;
 
 	/* IO thread (calls uv_run, handles read/write, etc) */
-	hb_thread_t thread_io;
+	tn_thread_t thread_io;
 
 	/* server's bind address */
-	hb_endpoint_t host_listen;
+	tn_endpoint_t host_listen;
 
 	/* tcp channel context (eg. connections) */
 	tcp_channel_list_t channel_list;
 
 	/* IO thread's buffer pool for recv */
-	hb_buffer_pool_t pool_read;
+	tn_buffer_pool_t pool_read;
 
 	/* main thread's buffer pool for send */
-	hb_buffer_pool_t pool_write;
+	tn_buffer_pool_t pool_write;
 
 	/* context for the IO thread to queue events for the main thread */
-	hb_event_list_t events;
+	tn_event_list_t events;
 
 	/* pointer array of events to pull from the event queue */
-	hb_event_base_t **event_updates;
+	tn_event_base_t **event_updates;
 	uint64_t event_updates_count;
 
 	/* to how many buffers, event updates, are we bounded */
@@ -70,16 +70,16 @@ typedef struct tcp_service_s {
 	tcp_service_write_req_t *write_reqs;
 
 	/* write request free list for IO thread --> main thread */
-	hb_queue_spsc_t write_reqs_free;
+	tn_queue_spsc_t write_reqs_free;
 
 	/* write request ready list for main thread --> IO thread */
-	hb_queue_spsc_t write_reqs_ready;
+	tn_queue_spsc_t write_reqs_ready;
 
 	/* overall connection statistics - these will be sent in the event queue - don't touch */
-	hb_event_io_stats_t stats;
+	tn_event_io_stats_t stats;
 
 	/* server state (connecting, connecting, etc) */
-	hb_atomic_t state;
+	tn_atomic_t state;
 } tcp_service_t;
 
 
@@ -89,7 +89,7 @@ int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port);
 int tcp_service_stop(tcp_service_t *service);
 int tcp_service_stop_signal(tcp_service_t *service);
 tcp_service_state_t tcp_service_state(tcp_service_t *service);
-int tcp_service_events_acquire(tcp_service_t *service, hb_event_base_t ***out_evt_base, uint64_t *out_count);
+int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_evt_base, uint64_t *out_count);
 int tcp_service_events_release(tcp_service_t *service);
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);
 

@@ -1,5 +1,5 @@
 # Generate a test driver executable with the given name
-function(hb_test_single c_file_name test_case_name target_link_libs target_compile_defs)
+function(tn_test_single c_file_name test_case_name target_link_libs target_compile_defs)
 	set(TEST_CASE_NAME ${test_case_name})
 	set(TEST_SRC_C ${c_file_name}.c)
 	set(TEST_OUTPUT_C ${CMAKE_CURRENT_BINARY_DIR}/${c_file_name}_runner_single.c)

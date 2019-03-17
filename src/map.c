@@ -6,46 +6,46 @@
 #include "hb/allocator.h"
 
 // private ------------------------------------------------------------------------------------------------------
-uint64_t hb_map_key_hash_fn(const void *key)
+uint64_t tn_map_key_hash_fn(const void *key)
 {
 	return (uint64_t)key;
 }
 
 // private ------------------------------------------------------------------------------------------------------
-bool hb_map_key_cmp_fn(const void *a, const void *b)
+bool tn_map_key_cmp_fn(const void *a, const void *b)
 {
 	return (a == b);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_map_setup(hb_map_t *map, uint64_t capacity)
+int tn_map_setup(tn_map_t *map, uint64_t capacity)
 {
 	assert(map);
 	memset(map, 0, sizeof(*map));
 
 	map->capacity = capacity;
 
-	struct aws_hash_table *priv = HB_MEM_ACQUIRE(sizeof(*priv));
-	HB_GUARD_NULL(priv);
+	struct aws_hash_table *priv = TN_MEM_ACQUIRE(sizeof(*priv));
+	TN_GUARD_NULL(priv);
 
-	HB_GUARD_NULL_CLEANUP(aws_hash_table_init(priv, &hb_aws_default_allocator, capacity, hb_map_key_hash_fn, hb_map_key_cmp_fn, NULL, NULL));
+	TN_GUARD_NULL_CLEANUP(aws_hash_table_init(priv, &tn_aws_default_allocator, capacity, tn_map_key_hash_fn, tn_map_key_cmp_fn, NULL, NULL));
 
 	map->priv = priv;
 cleanup:
-	HB_MEM_RELEASE(priv);
-	return HB_ERROR;
+	TN_MEM_RELEASE(priv);
+	return TN_ERROR;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_map_cleanup(hb_map_t *map)
+void tn_map_cleanup(tn_map_t *map)
 {
 	assert(map);
 	aws_hash_table_clean_up((struct aws_hash_table *)map->priv);
-	HB_MEM_RELEASE(map->priv);
+	TN_MEM_RELEASE(map->priv);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_map_get(hb_map_t *map, void *key, void **out_value)
+int tn_map_get(tn_map_t *map, void *key, void **out_value)
 {
 	assert(map);
 	assert(map->priv);
@@ -53,43 +53,43 @@ int hb_map_get(hb_map_t *map, void *key, void **out_value)
 
 	*out_value = NULL;
 	struct aws_hash_element *elem = NULL;
-	HB_GUARD(aws_hash_table_find((struct aws_hash_table *)map->priv, key, &elem));
+	TN_GUARD(aws_hash_table_find((struct aws_hash_table *)map->priv, key, &elem));
 	
-	HB_GUARD_NULL(elem);
+	TN_GUARD_NULL(elem);
 	*out_value = elem->value;
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_map_set(hb_map_t *map, void *key, void *value)
+int tn_map_set(tn_map_t *map, void *key, void *value)
 {
 	assert(map);
 	assert(map->priv);
 	assert(value);
 
 	int created = 0;
-	HB_GUARD(aws_hash_table_put((struct aws_hash_table *)map->priv, key, value, &created));
-	HB_GUARD(created == 0);
+	TN_GUARD(aws_hash_table_put((struct aws_hash_table *)map->priv, key, value, &created));
+	TN_GUARD(created == 0);
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_map_remove(hb_map_t *map, void *key)
+int tn_map_remove(tn_map_t *map, void *key)
 {
 	assert(map);
 	assert(map->priv);
 
 	int removed = 0;
-	HB_GUARD(aws_hash_table_remove((struct aws_hash_table *)map->priv, key, NULL, &removed));
-	HB_GUARD(removed == 0);
+	TN_GUARD(aws_hash_table_remove((struct aws_hash_table *)map->priv, key, NULL, &removed));
+	TN_GUARD(removed == 0);
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_map_clear(hb_map_t *map)
+void tn_map_clear(tn_map_t *map)
 {
 	assert(map);
 	assert(map->priv);

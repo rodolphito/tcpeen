@@ -1,5 +1,5 @@
-#ifndef HB_BUFFER_POOL_H
-#define HB_BUFFER_POOL_H
+#ifndef TN_BUFFER_POOL_H
+#define TN_BUFFER_POOL_H
 
 #include <stdint.h>
 
@@ -10,28 +10,28 @@
 #include "hb/queue_spsc.h"
 
 
-typedef struct hb_buffer_s hb_buffer_t;
+typedef struct tn_buffer_s tn_buffer_t;
 
 
-typedef struct hb_buffer_pool_s {
+typedef struct tn_buffer_pool_s {
 	uint64_t blocks_inuse;
 	uint64_t bytes_inuse;
 	uint64_t block_size;
 	uint64_t block_count;
-	hb_buffer_t *hb_buffers;
+	tn_buffer_t *tn_buffers;
 	uint8_t *allocation;
-	hb_queue_spsc_t hb_buffers_free;
-} hb_buffer_pool_t;
+	tn_queue_spsc_t tn_buffers_free;
+} tn_buffer_pool_t;
 
 
-int hb_buffer_pool_setup(hb_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size);
-void hb_buffer_pool_cleanup(hb_buffer_pool_t *pool);
+int tn_buffer_pool_setup(tn_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size);
+void tn_buffer_pool_cleanup(tn_buffer_pool_t *pool);
 
-int hb_buffer_pool_push(hb_buffer_pool_t *pool, hb_buffer_t *buffer);
-int hb_buffer_pool_peek(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
-int hb_buffer_pool_pop(hb_buffer_pool_t *pool);
-void hb_buffer_pool_pop_cached(hb_buffer_pool_t *pool);
-int hb_buffer_pool_pop_back(hb_buffer_pool_t *pool, hb_buffer_t **out_buffer);
+int tn_buffer_pool_push(tn_buffer_pool_t *pool, tn_buffer_t *buffer);
+int tn_buffer_pool_peek(tn_buffer_pool_t *pool, tn_buffer_t **out_buffer);
+int tn_buffer_pool_pop(tn_buffer_pool_t *pool);
+void tn_buffer_pool_pop_cached(tn_buffer_pool_t *pool);
+int tn_buffer_pool_pop_back(tn_buffer_pool_t *pool, tn_buffer_t **out_buffer);
 
 
 #endif

@@ -9,14 +9,14 @@ include(hbGeneral)
 include(hbTesting)
 enable_testing()
 
-set(HB_TARGET_LINK_LIBS "")
+set(TN_TARGET_LINK_LIBS "")
 
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	hb_list_add(HB_TARGET_COMPILE_DEFS -DHB_CMAKE_BUILD_DEBUG)
+	tn_list_add(TN_TARGET_COMPILE_DEFS -DTN_CMAKE_BUILD_DEBUG)
 endif()
 
 if(NOT WIN32)
@@ -37,7 +37,7 @@ else()
 	
 	if(MSVC)
 		add_custom_target(CMake SOURCES CMakeLists.txt)
-		hb_list_add(HB_TARGET_COMPILE_DEFS -D_CRT_SECURE_NO_WARNINGS)
+		tn_list_add(TN_TARGET_COMPILE_DEFS -D_CRT_SECURE_NO_WARNINGS)
 	endif()
 endif()
 
@@ -46,7 +46,7 @@ endif()
 # argparse dependency
 include_directories(${CMAKE_SOURCE_DIR}/deps/argparse)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/argparse)
-list(APPEND HB_TARGET_LINK_LIBS argparse)
+list(APPEND TN_TARGET_LINK_LIBS argparse)
 
 
 #
@@ -54,7 +54,7 @@ list(APPEND HB_TARGET_LINK_LIBS argparse)
 set(BUILD_TESTING OFF)
 include_directories(${CMAKE_SOURCE_DIR}/deps/libuv/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/libuv)
-list(APPEND HB_TARGET_LINK_LIBS uv_a)
+list(APPEND TN_TARGET_LINK_LIBS uv_a)
 
 
 #
@@ -62,7 +62,7 @@ list(APPEND HB_TARGET_LINK_LIBS uv_a)
 include_directories(${CMAKE_SOURCE_DIR}/deps/aws-c-common/include)
 include_directories(${CMAKE_BINARY_DIR}/deps/aws-c-common/generated/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/aws-c-common)
-list(APPEND HB_TARGET_LINK_LIBS aws-c-common)
+list(APPEND TN_TARGET_LINK_LIBS aws-c-common)
 
 
 #
@@ -114,15 +114,15 @@ set(TCP_LIBRARY_SRCS
 	include/hb/config.h
 )
 add_library(tcpeen ${TCP_LIBRARY_SRCS})
-target_link_libraries(tcpeen ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcpeen PRIVATE ${HB_TARGET_COMPILE_DEFS})
-list(APPEND HB_TARGET_LINK_LIBS tcpeen)
+target_link_libraries(tcpeen ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcpeen PRIVATE ${TN_TARGET_COMPILE_DEFS})
+list(APPEND TN_TARGET_LINK_LIBS tcpeen)
 
 
 #
 # build test executables
 # TODO: make a cache variable to turn tests on/off
-set(HB_TESTS_C
+set(TN_TESTS_C
 	"tests/test_buffer.c"
 	"tests/test_endpoint.c"
 	"tests/test_event.c"
@@ -131,7 +131,7 @@ set(HB_TESTS_C
 	"tests/test_tcp_service.c"
 	"tests/test_queue_spsc.c"
 )
-set(TESTS ${HB_TESTS_C})
+set(TESTS ${TN_TESTS_C})
 
 add_test_case(test_events)
 add_test_case(test_tcp_service)
@@ -147,11 +147,11 @@ add_test_case(test_queue_spsc_full)
 add_test_case(test_queue_spsc_npot)
 
 generate_test_driver(tcpeen-tests)
-target_link_libraries(tcpeen-tests ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcpeen-tests PRIVATE ${HB_TARGET_COMPILE_DEFS})
+target_link_libraries(tcpeen-tests ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcpeen-tests PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 # runner for single test for easy debug step through an impl issue
-hb_test_single(test_event test_events "${HB_TARGET_LINK_LIBS}" "${HB_TARGET_COMPILE_DEFS}")
+tn_test_single(test_event test_events "${TN_TARGET_LINK_LIBS}" "${TN_TARGET_COMPILE_DEFS}")
 
 #
 # build tcploadgen executable
@@ -160,8 +160,8 @@ set(TCP_LOADGEN_SRCS
 	include/tcplg/cmdargs.h
 )
 add_executable(tcplg ${TCP_LOADGEN_SRCS})
-target_link_libraries(tcplg ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcplg PRIVATE ${HB_TARGET_COMPILE_DEFS})
+target_link_libraries(tcplg ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcplg PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 
 #
@@ -171,8 +171,8 @@ set(TCP_SERVER_SRCS
 	include/tcpserv/tcpserv.h
 )
 add_executable(tcpserv ${TCP_SERVER_SRCS})
-target_link_libraries(tcpserv ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcpserv PRIVATE ${HB_TARGET_COMPILE_DEFS})
+target_link_libraries(tcpserv ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcpserv PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 
 #
@@ -181,8 +181,8 @@ set(TCP_SERVER_SRCS
 	src/tcpserv/tcpserv_unity.c
 )
 add_executable(tcpserv_unity ${TCP_SERVER_SRCS})
-target_link_libraries(tcpserv_unity ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcpserv_unity PRIVATE ${HB_TARGET_COMPILE_DEFS})
+target_link_libraries(tcpserv_unity ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcpserv_unity PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 
 #
@@ -192,8 +192,8 @@ set(TCP_PLUGIN_SRCS
 	src/unity/tcpeen_unity.c
 )
 add_library(tcpeen_unity SHARED ${TCP_PLUGIN_SRCS})
-target_link_libraries(tcpeen_unity ${HB_TARGET_LINK_LIBS})
-target_compile_definitions(tcpeen_unity PRIVATE ${HB_TARGET_COMPILE_DEFS})
+target_link_libraries(tcpeen_unity ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(tcpeen_unity PRIVATE ${TN_TARGET_COMPILE_DEFS})
 add_custom_command(
 	TARGET tcpeen_unity
 	POST_BUILD

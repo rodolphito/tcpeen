@@ -5,73 +5,73 @@
 
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_ptr_setup(hb_list_ptr_t *list, size_t capacity)
+int tn_list_ptr_setup(tn_list_ptr_t *list, size_t capacity)
 {
-	HB_GUARD_NULL(list);
+	TN_GUARD_NULL(list);
 	memset(list, 0, sizeof(*list));
 
 	list->capacity = capacity;
-	HB_GUARD_NULL(list->data = HB_MEM_ACQUIRE(list->capacity * sizeof(*list->data)));
+	TN_GUARD_NULL(list->data = TN_MEM_ACQUIRE(list->capacity * sizeof(*list->data)));
 	
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_list_ptr_cleanup(hb_list_ptr_t *list)
+void tn_list_ptr_cleanup(tn_list_ptr_t *list)
 {
 	if (!list) return;
-	HB_MEM_RELEASE(list->data);
+	TN_MEM_RELEASE(list->data);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_ptr_push_back(hb_list_ptr_t *list, void *item)
+int tn_list_ptr_push_back(tn_list_ptr_t *list, void *item)
 {
 	assert(list);
 	assert(list->data);
 	assert(item);
 
-	HB_GUARD(list->index >= list->capacity);
+	TN_GUARD(list->index >= list->capacity);
 	list->data[list->index++] = (uintptr_t)item;
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_ptr_pop_back(hb_list_ptr_t *list, void **item)
+int tn_list_ptr_pop_back(tn_list_ptr_t *list, void **item)
 {
 	assert(list);
 	assert(list->data);
 	assert(item);
 
-	HB_GUARD(list->index == 0);
+	TN_GUARD(list->index == 0);
 	*item = (void *)list->data[--list->index];
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-uint64_t hb_list_ptr_count(hb_list_ptr_t *list)
+uint64_t tn_list_ptr_count(tn_list_ptr_t *list)
 {
 	assert(list);
 	return list->index;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_list_ptr_clear(hb_list_ptr_t *list)
+void tn_list_ptr_clear(tn_list_ptr_t *list)
 {
 	assert(list);
 	list->index = 0;
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void *hb_list_ptr_get(hb_list_ptr_t *list, uint64_t index)
+void *tn_list_ptr_get(tn_list_ptr_t *list, uint64_t index)
 {
 	assert(list);
 	return (void *)list->data[index];
 }
 
 // --------------------------------------------------------------------------------------------------------------
-void hb_list_ptr_swap(hb_list_ptr_t *list, uint64_t index1, uint64_t index2)
+void tn_list_ptr_swap(tn_list_ptr_t *list, uint64_t index1, uint64_t index2)
 {
 	assert(list);
 
@@ -81,13 +81,13 @@ void hb_list_ptr_swap(hb_list_ptr_t *list, uint64_t index1, uint64_t index2)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int hb_list_ptr_remove(hb_list_ptr_t *list, size_t index)
+int tn_list_ptr_remove(tn_list_ptr_t *list, size_t index)
 {
 	assert(list);
 
-	HB_GUARD(list->index == 0);
+	TN_GUARD(list->index == 0);
 
 	list->data[index] = list->data[--list->index];
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }

@@ -1,5 +1,5 @@
-#ifndef HB_TCP_CONNECTION_H
-#define HB_TCP_CONNECTION_H
+#ifndef TN_TCP_CONNECTION_H
+#define TN_TCP_CONNECTION_H
 
 #include <stdint.h>
 
@@ -30,8 +30,8 @@ typedef enum connection_state_e {
 typedef struct tcp_conn_s {
 	tcp_ctx_t *ctx;
 	uv_tcp_t *tcp_handle;
-	hb_endpoint_t host_local;
-	hb_endpoint_t host_remote;
+	tn_endpoint_t host_local;
+	tn_endpoint_t host_remote;
 	int32_t read_err;
 	int32_t write_err;
 	int32_t state;
@@ -51,7 +51,7 @@ typedef struct tcp_conn_s {
 	uint64_t next_msg_id;
 	uint64_t next_latency;
 	uint8_t *next_buf;
-	hb_buffer_t *next_buffer;
+	tn_buffer_t *next_buffer;
 	tcp_channel_read_state_t read_state;
 } tcp_conn_t;
 

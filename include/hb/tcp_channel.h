@@ -1,5 +1,5 @@
-#ifndef HB_TCP_CHANNEL_H
-#define HB_TCP_CHANNEL_H
+#ifndef TN_TCP_CHANNEL_H
+#define TN_TCP_CHANNEL_H
 
 #include <stdint.h>
 
@@ -34,8 +34,8 @@ typedef struct tcp_channel_s {
 	uint64_t id;
 	uint64_t list_id;
 	tcp_service_t *service;
-	hb_buffer_t *read_buffer;
-	hb_endpoint_t endpoint;
+	tn_buffer_t *read_buffer;
+	tn_endpoint_t endpoint;
 	int32_t error_code;
 	tcp_channel_state_t state;
 	tcp_channel_read_state_t read_state;
@@ -47,15 +47,15 @@ typedef struct tcp_channel_list_s {
 	void *priv;
 	tcp_channel_t *client_map;
 	size_t clients_max;
-	hb_list_ptr_t client_list_free;
-	hb_list_ptr_t client_list_open;
+	tn_list_ptr_t client_list_free;
+	tn_list_ptr_t client_list_open;
 } tcp_channel_list_t;
 
 
 tcp_channel_state_t tcp_channel_state(tcp_channel_t *channel);
 tcp_channel_read_state_t tcp_channel_read_state(tcp_channel_t *channel);
 int tcp_channel_read_header(tcp_channel_t *channel, uint32_t *out_len);
-int tcp_channel_read_payload(tcp_channel_t *channel, hb_buffer_span_t *out_span);
+int tcp_channel_read_payload(tcp_channel_t *channel, tn_buffer_span_t *out_span);
 int tcp_channel_buffer_swap(tcp_channel_t *channel);
 
 int tcp_channel_list_setup(tcp_channel_list_t *list, size_t clients_max);

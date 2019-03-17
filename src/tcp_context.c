@@ -10,11 +10,11 @@ tcp_ctx_t *tcp_context_new()
 {
 	tcp_ctx_t *ctx;
 
-	if (!(ctx = HB_MEM_ACQUIRE(sizeof(tcp_ctx_t)))) {
+	if (!(ctx = TN_MEM_ACQUIRE(sizeof(tcp_ctx_t)))) {
 		return NULL;
 	}
 	memset(ctx, 0, sizeof(tcp_ctx_t));
-	if (!(ctx->config = HB_MEM_ACQUIRE(sizeof(tcp_ctx_config_t)))) {
+	if (!(ctx->config = TN_MEM_ACQUIRE(sizeof(tcp_ctx_config_t)))) {
 		tcp_context_delete(&ctx);
 		return NULL;
 	}
@@ -31,10 +31,10 @@ void tcp_context_delete(tcp_ctx_t **pctx)
 	if (!ctx) return;
 
 	if (ctx->config) {
-		HB_MEM_RELEASE(ctx->config);
+		TN_MEM_RELEASE(ctx->config);
 	}
 
-	HB_MEM_RELEASE(ctx);
+	TN_MEM_RELEASE(ctx);
 	ctx = NULL;
 }
 

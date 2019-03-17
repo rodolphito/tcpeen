@@ -1,17 +1,17 @@
-#ifndef HB_UUID_H
-#define HB_UUID_H
+#ifndef TN_UUID_H
+#define TN_UUID_H
 
 #include <stdint.h>
 
-typedef struct hb_uuid_s {
+typedef struct tn_uuid_s {
 	uint8_t uuid_data[16];
-} hb_uuid_t;
+} tn_uuid_t;
 
-hb_uuid_t *hb_uuid_new(void);
-void hb_uuid_delete(hb_uuid_t **ptr_uuid);
-int hb_uuid_generate(hb_uuid_t *uuid);
-int hb_uuid_clear(hb_uuid_t *uuid);
-int hb_uuid_compare(hb_uuid_t *uuid1, hb_uuid_t *uuid2);
-#define hb_uuid_cmp(uuid1, uuid2) hb_uuid_compare(uuid1, uuid2)
+tn_uuid_t *tn_uuid_new(void);
+void tn_uuid_delete(tn_uuid_t **ptr_uuid);
+int tn_uuid_generate(tn_uuid_t *uuid);
+int tn_uuid_clear(tn_uuid_t *uuid);
+int tn_uuid_compare(tn_uuid_t *uuid1, tn_uuid_t *uuid2);
+#define tn_uuid_cmp(uuid1, uuid2) tn_uuid_compare(uuid1, uuid2)
 
 #endif

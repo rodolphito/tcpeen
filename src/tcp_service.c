@@ -10,7 +10,7 @@
 // private ------------------------------------------------------------------------------------------------------
 void tcp_service_set_state(tcp_service_t *service, tcp_service_state_t state)
 {
-	hb_atomic_store(&service->state, state);
+	tn_atomic_store(&service->state, state);
 }
 
 // private ------------------------------------------------------------------------------------------------------
@@ -30,37 +30,37 @@ void tcp_service_io_thread(void *data)
 	priv->uv_check = NULL;
 
 	ret = UV_ENOMEM;
-	HB_GUARD_NULL_CLEANUP(priv->uv_loop = HB_MEM_ACQUIRE(sizeof(*priv->uv_loop)));
-	HB_GUARD_NULL_CLEANUP(priv->tcp_handle = HB_MEM_ACQUIRE(sizeof(*priv->tcp_handle)));
-	HB_GUARD_NULL_CLEANUP(priv->uv_accept_timer = HB_MEM_ACQUIRE(sizeof(*priv->uv_accept_timer)));
-	HB_GUARD_NULL_CLEANUP(priv->uv_prep = HB_MEM_ACQUIRE(sizeof(*priv->uv_prep)));
-	HB_GUARD_NULL_CLEANUP(priv->uv_check = HB_MEM_ACQUIRE(sizeof(*priv->uv_check)));
-	HB_GUARD_NULL_CLEANUP(priv->uv_signal = HB_MEM_ACQUIRE(sizeof(*priv->uv_signal)));
+	TN_GUARD_NULL_CLEANUP(priv->uv_loop = TN_MEM_ACQUIRE(sizeof(*priv->uv_loop)));
+	TN_GUARD_NULL_CLEANUP(priv->tcp_handle = TN_MEM_ACQUIRE(sizeof(*priv->tcp_handle)));
+	TN_GUARD_NULL_CLEANUP(priv->uv_accept_timer = TN_MEM_ACQUIRE(sizeof(*priv->uv_accept_timer)));
+	TN_GUARD_NULL_CLEANUP(priv->uv_prep = TN_MEM_ACQUIRE(sizeof(*priv->uv_prep)));
+	TN_GUARD_NULL_CLEANUP(priv->uv_check = TN_MEM_ACQUIRE(sizeof(*priv->uv_check)));
+	TN_GUARD_NULL_CLEANUP(priv->uv_signal = TN_MEM_ACQUIRE(sizeof(*priv->uv_signal)));
 
-	HB_GUARD_CLEANUP(ret = uv_loop_init(priv->uv_loop));
+	TN_GUARD_CLEANUP(ret = uv_loop_init(priv->uv_loop));
 
-	HB_GUARD_CLEANUP(ret = uv_timer_init(priv->uv_loop, priv->uv_accept_timer));
+	TN_GUARD_CLEANUP(ret = uv_timer_init(priv->uv_loop, priv->uv_accept_timer));
 	priv->uv_accept_timer->data = service;
-	HB_GUARD_CLEANUP(ret = uv_timer_start(priv->uv_accept_timer, on_timer_cb, 100, 100));
+	TN_GUARD_CLEANUP(ret = uv_timer_start(priv->uv_accept_timer, on_timer_cb, 100, 100));
 
-	HB_GUARD_CLEANUP(ret = uv_prepare_init(priv->uv_loop, priv->uv_prep));
+	TN_GUARD_CLEANUP(ret = uv_prepare_init(priv->uv_loop, priv->uv_prep));
 	priv->uv_prep->data = service;
-	HB_GUARD_CLEANUP(ret = uv_prepare_start(priv->uv_prep, on_prep_cb));
+	TN_GUARD_CLEANUP(ret = uv_prepare_start(priv->uv_prep, on_prep_cb));
 
-	HB_GUARD_CLEANUP(ret = uv_check_init(priv->uv_loop, priv->uv_check));
+	TN_GUARD_CLEANUP(ret = uv_check_init(priv->uv_loop, priv->uv_check));
 	priv->uv_check->data = service;
-	HB_GUARD_CLEANUP(ret = uv_check_start(priv->uv_check, on_check_cb));
+	TN_GUARD_CLEANUP(ret = uv_check_start(priv->uv_check, on_check_cb));
 
-	//HB_GUARD_CLEANUP(ret = uv_signal_init(priv->uv_loop, priv->uv_signal));
+	//TN_GUARD_CLEANUP(ret = uv_signal_init(priv->uv_loop, priv->uv_signal));
 	//priv->uv_signal->data = service;
-	//HB_GUARD_CLEANUP(ret = uv_signal_start_oneshot(priv->uv_signal, on_sigint_cb, SIGINT));
+	//TN_GUARD_CLEANUP(ret = uv_signal_start_oneshot(priv->uv_signal, on_sigint_cb, SIGINT));
 
 	// tcp listener
-	HB_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, priv->tcp_handle));
+	TN_GUARD_CLEANUP(ret = uv_tcp_init(priv->uv_loop, priv->tcp_handle));
 	priv->tcp_handle->data = service;
-	HB_GUARD_CLEANUP(ret = uv_tcp_nodelay(priv->tcp_handle, 1));
-	HB_GUARD_CLEANUP(ret = uv_tcp_bind(priv->tcp_handle, (const struct sockaddr *)&service->host_listen.sockaddr, 0));
-	HB_GUARD_CLEANUP(ret = uv_listen((uv_stream_t *)priv->tcp_handle, HB_SERVICE_MAX_CLIENTS, on_connection_cb));
+	TN_GUARD_CLEANUP(ret = uv_tcp_nodelay(priv->tcp_handle, 1));
+	TN_GUARD_CLEANUP(ret = uv_tcp_bind(priv->tcp_handle, (const struct sockaddr *)&service->host_listen.sockaddr, 0));
+	TN_GUARD_CLEANUP(ret = uv_listen((uv_stream_t *)priv->tcp_handle, TN_SERVICE_MAX_CLIENTS, on_connection_cb));
 
 
 	// listener is up
@@ -70,21 +70,21 @@ void tcp_service_io_thread(void *data)
 	}
 
 	if ((ret = uv_loop_close(priv->uv_loop))) {
-		hb_log_warning("Walking handles due to unclean IO loop close");
+		tn_log_warning("Walking handles due to unclean IO loop close");
 		uv_walk(priv->uv_loop, on_walk_cb, NULL);
-		HB_GUARD_CLEANUP(ret = uv_loop_close(priv->uv_loop));
+		TN_GUARD_CLEANUP(ret = uv_loop_close(priv->uv_loop));
 	}
 
-	ret = HB_SUCCESS;
+	ret = TN_SUCCESS;
 
 cleanup:
-	if (ret != HB_SUCCESS) hb_log_uv_error(ret);
+	if (ret != TN_SUCCESS) tn_log_uv_error(ret);
 
-	if (priv->uv_check) HB_MEM_RELEASE(priv->uv_check);
-	if (priv->uv_prep) HB_MEM_RELEASE(priv->uv_prep);
-	if (priv->uv_accept_timer) HB_MEM_RELEASE(priv->uv_accept_timer);
-	if (priv->tcp_handle) HB_MEM_RELEASE(priv->tcp_handle);
-	if (priv->uv_loop) HB_MEM_RELEASE(priv->uv_loop);
+	if (priv->uv_check) TN_MEM_RELEASE(priv->uv_check);
+	if (priv->uv_prep) TN_MEM_RELEASE(priv->uv_prep);
+	if (priv->uv_accept_timer) TN_MEM_RELEASE(priv->uv_accept_timer);
+	if (priv->tcp_handle) TN_MEM_RELEASE(priv->tcp_handle);
+	if (priv->uv_loop) TN_MEM_RELEASE(priv->uv_loop);
 
 	return;
 }
@@ -93,43 +93,43 @@ cleanup:
 int tcp_service_setup(tcp_service_t *service)
 {
 	int ret = UV_EINVAL;
-	HB_GUARD_NULL(service);
+	TN_GUARD_NULL(service);
 	memset(service, 0, sizeof(*service));
 
 	tcp_service_set_state(service, TCP_SERVICE_NEW);
 
-	HB_GUARD_NULL(service->priv = HB_MEM_ACQUIRE(sizeof(tcp_service_priv_t)));
+	TN_GUARD_NULL(service->priv = TN_MEM_ACQUIRE(sizeof(tcp_service_priv_t)));
 	memset(service->priv, 0, sizeof(tcp_service_priv_t));
 
-	HB_GUARD_CLEANUP(ret = tcp_channel_list_setup(&service->channel_list, HB_SERVICE_MAX_CLIENTS));
+	TN_GUARD_CLEANUP(ret = tcp_channel_list_setup(&service->channel_list, TN_SERVICE_MAX_CLIENTS));
 
-	service->buffer_count = HB_SERVICE_MAX_CLIENTS * 4;
-	HB_GUARD_CLEANUP(hb_buffer_pool_setup(&service->pool_read, service->buffer_count, HB_SERVICE_MAX_READ));
-	HB_GUARD_CLEANUP(hb_buffer_pool_setup(&service->pool_write, service->buffer_count, HB_SERVICE_MAX_READ));
-	HB_GUARD_CLEANUP(hb_event_list_setup(&service->events, service->buffer_count));
-	HB_GUARD_NULL_CLEANUP(service->event_updates = HB_MEM_ACQUIRE(service->buffer_count * sizeof(hb_event_base_t *)));
-	HB_GUARD_NULL_CLEANUP(service->write_reqs = HB_MEM_ACQUIRE(service->buffer_count * sizeof(*service->write_reqs)));
-	HB_GUARD_CLEANUP(hb_queue_spsc_setup(&service->write_reqs_free, service->buffer_count));
-	HB_GUARD_CLEANUP(hb_queue_spsc_setup(&service->write_reqs_ready, service->buffer_count));
+	service->buffer_count = TN_SERVICE_MAX_CLIENTS * 4;
+	TN_GUARD_CLEANUP(tn_buffer_pool_setup(&service->pool_read, service->buffer_count, TN_SERVICE_MAX_READ));
+	TN_GUARD_CLEANUP(tn_buffer_pool_setup(&service->pool_write, service->buffer_count, TN_SERVICE_MAX_READ));
+	TN_GUARD_CLEANUP(tn_event_list_setup(&service->events, service->buffer_count));
+	TN_GUARD_NULL_CLEANUP(service->event_updates = TN_MEM_ACQUIRE(service->buffer_count * sizeof(tn_event_base_t *)));
+	TN_GUARD_NULL_CLEANUP(service->write_reqs = TN_MEM_ACQUIRE(service->buffer_count * sizeof(*service->write_reqs)));
+	TN_GUARD_CLEANUP(tn_queue_spsc_setup(&service->write_reqs_free, service->buffer_count));
+	TN_GUARD_CLEANUP(tn_queue_spsc_setup(&service->write_reqs_ready, service->buffer_count));
 
 	tcp_service_write_req_t *write_req;
 	for (uint64_t i = 0; i < service->buffer_count; i++) {
 		write_req = &service->write_reqs[i];
 		write_req->id = i;
 		write_req->buffer = NULL;
-		HB_GUARD_CLEANUP(hb_queue_spsc_push(&service->write_reqs_free, write_req));
+		TN_GUARD_CLEANUP(tn_queue_spsc_push(&service->write_reqs_free, write_req));
 
 		service->event_updates[i] = NULL;
 	}
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 
 cleanup:
-	HB_MEM_RELEASE(service->event_updates);
-	HB_MEM_RELEASE(service->write_reqs);
-	HB_MEM_RELEASE(service->priv);
+	TN_MEM_RELEASE(service->event_updates);
+	TN_MEM_RELEASE(service->write_reqs);
+	TN_MEM_RELEASE(service->priv);
 
-	return HB_ERROR;
+	return TN_ERROR;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -139,51 +139,51 @@ void tcp_service_cleanup(tcp_service_t *service)
 	if (!service->priv) return;
 
 	tcp_channel_list_cleanup(&service->channel_list);
-	hb_buffer_pool_cleanup(&service->pool_read);
-	hb_buffer_pool_cleanup(&service->pool_write);
-	hb_event_list_cleanup(&service->events);
-	hb_queue_spsc_cleanup(&service->write_reqs_free);
-	hb_queue_spsc_cleanup(&service->write_reqs_ready);
+	tn_buffer_pool_cleanup(&service->pool_read);
+	tn_buffer_pool_cleanup(&service->pool_write);
+	tn_event_list_cleanup(&service->events);
+	tn_queue_spsc_cleanup(&service->write_reqs_free);
+	tn_queue_spsc_cleanup(&service->write_reqs_ready);
 
-	HB_MEM_RELEASE(service->event_updates);
-	HB_MEM_RELEASE(service->write_reqs);
-	HB_MEM_RELEASE(service->priv);
+	TN_MEM_RELEASE(service->event_updates);
+	TN_MEM_RELEASE(service->write_reqs);
+	TN_MEM_RELEASE(service->priv);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_start(tcp_service_t *service, const char *ipstr, uint16_t port)
 {
 	tcp_service_state_t state = tcp_service_state(service);
-	HB_GUARD_CLEANUP(state != TCP_SERVICE_NEW && state != TCP_SERVICE_STOPPED);
+	TN_GUARD_CLEANUP(state != TCP_SERVICE_NEW && state != TCP_SERVICE_STOPPED);
 	tcp_service_set_state(service, TCP_SERVICE_STARTING);
 
 	char ipbuf[255];
-	HB_GUARD_CLEANUP(hb_endpoint_set(&service->host_listen, ipstr, port));
-	HB_GUARD_CLEANUP(hb_endpoint_get_string(&service->host_listen, ipbuf, 255));
-	HB_GUARD_CLEANUP(hb_thread_launch(&service->thread_io, tcp_service_io_thread, service));
-	hb_log_trace("Listening on %s", ipbuf);
+	TN_GUARD_CLEANUP(tn_endpoint_set(&service->host_listen, ipstr, port));
+	TN_GUARD_CLEANUP(tn_endpoint_get_string(&service->host_listen, ipbuf, 255));
+	TN_GUARD_CLEANUP(tn_thread_launch(&service->thread_io, tcp_service_io_thread, service));
+	tn_log_trace("Listening on %s", ipbuf);
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 
 cleanup:
-	return HB_ERROR;
+	return TN_ERROR;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_stop(tcp_service_t *service)
 {
 	tcp_service_state_t state = tcp_service_state(service);
-	HB_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
+	TN_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
 	tcp_service_set_state(service, TCP_SERVICE_STOPPING);
 
-	hb_log_trace("tcp service stopping");
-	if ((hb_thread_join(&service->thread_io))) {
-		hb_log_error("error joining IO thread");
+	tn_log_trace("tcp service stopping");
+	if ((tn_thread_join(&service->thread_io))) {
+		tn_log_error("error joining IO thread");
 	}
 
 	tcp_service_set_state(service, TCP_SERVICE_STOPPED);
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -191,19 +191,19 @@ int tcp_service_stop_signal(tcp_service_t *service)
 {
 	assert(service);
 	tcp_service_state_t state = tcp_service_state(service);
-	HB_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
+	TN_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
 	tcp_service_set_state(service, TCP_SERVICE_STOPPING);
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 tcp_service_state_t tcp_service_state(tcp_service_t *service)
 {
-	return hb_atomic_load(&service->state);
+	return tn_atomic_load(&service->state);
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tcp_service_events_acquire(tcp_service_t *service, hb_event_base_t ***out_evt_base, uint64_t *out_count)
+int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_evt_base, uint64_t *out_count)
 {
 	assert(service);
 	assert(out_evt_base);
@@ -212,12 +212,12 @@ int tcp_service_events_acquire(tcp_service_t *service, hb_event_base_t ***out_ev
 	*out_evt_base = NULL;
 	*out_count = service->event_updates_count = 0;
 	uint64_t count = service->buffer_count;
-	HB_GUARD(hb_event_list_ready_pop_all(&service->events, service->event_updates, &count));
+	TN_GUARD(tn_event_list_ready_pop_all(&service->events, service->event_updates, &count));
 
 	*out_evt_base = service->event_updates;
 	*out_count = service->event_updates_count = count;
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -225,24 +225,24 @@ int tcp_service_events_release(tcp_service_t *service)
 {
 	assert(service);
 	
-	hb_event_client_read_t *evt_read;
+	tn_event_client_read_t *evt_read;
 	for (size_t i = 0; i < service->event_updates_count; i++) {
 		switch (service->event_updates[i]->type) {
-		case HB_EVENT_CLIENT_OPEN:
+		case TN_EVENT_CLIENT_OPEN:
 			break;
-		case HB_EVENT_CLIENT_CLOSE:
+		case TN_EVENT_CLIENT_CLOSE:
 			break;
-		case HB_EVENT_CLIENT_READ:
-			evt_read = (hb_event_client_read_t *)service->event_updates[i];
-			hb_buffer_pool_push(&service->pool_read, evt_read->hb_buffer);
+		case TN_EVENT_CLIENT_READ:
+			evt_read = (tn_event_client_read_t *)service->event_updates[i];
+			tn_buffer_pool_push(&service->pool_read, evt_read->tn_buffer);
 			break;
 		default:
 			break;
 		}
-		hb_event_list_free_push(&service->events, service->event_updates[i]);
+		tn_event_list_free_push(&service->events, service->event_updates[i]);
 	}
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -256,38 +256,38 @@ int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sn
 	tcp_service_write_req_t *send_req;
 
 	/* send req will now be in our hands, but we need to pop it or drop it before return */
-	ret = HB_SEND_NOREQ;
-	HB_GUARD_CLEANUP(hb_queue_spsc_peek(&service->write_reqs_free, (void **)&send_req));
+	ret = TN_SEND_NOREQ;
+	TN_GUARD_CLEANUP(tn_queue_spsc_peek(&service->write_reqs_free, (void **)&send_req));
 	
-	ret = HB_SEND_NOBUF;
-	HB_GUARD_CLEANUP(hb_buffer_pool_peek(&service->pool_write, &send_req->buffer));
-	HB_GUARD_CLEANUP(hb_buffer_write(send_req->buffer, sndbuf, sndlen));
+	ret = TN_SEND_NOBUF;
+	TN_GUARD_CLEANUP(tn_buffer_pool_peek(&service->pool_write, &send_req->buffer));
+	TN_GUARD_CLEANUP(tn_buffer_write(send_req->buffer, sndbuf, sndlen));
 
 	send_req->channel = channel;
-	send_req->uv_buf.base = hb_buffer_read_ptr(send_req->buffer);
-	send_req->uv_buf.len = UV_BUFLEN_CAST(hb_buffer_length(send_req->buffer));
+	send_req->uv_buf.base = tn_buffer_read_ptr(send_req->buffer);
+	send_req->uv_buf.len = UV_BUFLEN_CAST(tn_buffer_length(send_req->buffer));
 
 	/* push the request into the ready queue *before* popping anything from free queues */
-	ret = HB_SEND_PUSH;
-	HB_GUARD(hb_queue_spsc_push(&service->write_reqs_ready, send_req));
-	hb_buffer_pool_pop_cached(&service->pool_write);
-	hb_queue_spsc_pop_cached(&service->write_reqs_free);
+	ret = TN_SEND_PUSH;
+	TN_GUARD(tn_queue_spsc_push(&service->write_reqs_ready, send_req));
+	tn_buffer_pool_pop_cached(&service->pool_write);
+	tn_queue_spsc_pop_cached(&service->write_reqs_free);
 
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 
 cleanup:
-	hb_log_error("failed to send write request: %d", ret);
+	tn_log_error("failed to send write request: %d", ret);
 	return ret;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_stats_clear(tcp_service_t *service)
 {
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_stats_get(tcp_service_t *service, tcp_service_stats_t *stats)
 {
-	return HB_SUCCESS;
+	return TN_SUCCESS;
 }
