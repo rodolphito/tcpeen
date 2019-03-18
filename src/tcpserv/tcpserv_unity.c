@@ -1,10 +1,9 @@
 #include "tn/error.h"
 #include "tn/log.h"
+#include "tn/system.h"
 #include "tn/event.h"
 #include "tn/tcp_service.h"
 #include "tn/queue_spsc.h"
-
-#include "uv.h"
 
 
 int handle_client_read(tcp_service_t *service, tn_event_client_read_t *evt_read)
@@ -30,9 +29,15 @@ cleanup:
 int main(void)
 {
 	int ret;
+	tn_system_t system;
+
 	tcp_service_t tcp_service = {
 		.priv = NULL,
 	};
+
+	TN_GUARD(tn_system_setup(&system));
+
+	tn_system_cpu_count(&system);
 
 	TN_GUARD(tcp_service_setup(&tcp_service));
 
@@ -66,6 +71,8 @@ int main(void)
 	TN_GUARD(tcp_service_stop(&tcp_service));
 
 	tcp_service_cleanup(&tcp_service);
+
+	tn_system_cleanup(&system);
 
 	return 0;
 }
