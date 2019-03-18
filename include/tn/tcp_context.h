@@ -21,7 +21,7 @@ typedef struct tcp_ctx_s {
 	uint64_t send_bytes;
 } tcp_ctx_t;
 
-tcp_ctx_t *tcp_context_new();
+tcp_ctx_t *tcp_context_new(void);
 void tcp_context_delete(tcp_ctx_t **ctx);
 int tcp_context_set_config(tcp_ctx_t *ctx, tcp_ctx_config_t *cfg);
 uv_loop_t *tcp_context_get_loop(tcp_ctx_t *ctx);
