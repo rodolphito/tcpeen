@@ -1,11 +1,11 @@
-#include "hb/allocator.h"
+#include "tn/allocator.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "hb/error.h"
+#include "tn/error.h"
 
 
 // private ------------------------------------------------------------------------------------------------------

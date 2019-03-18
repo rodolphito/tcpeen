@@ -1,9 +1,9 @@
-#include "hb/map.h"
+#include "tn/map.h"
 
 #include "aws/common/hash_table.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
 
 // private ------------------------------------------------------------------------------------------------------
 uint64_t tn_map_key_hash_fn(const void *key)

@@ -1,9 +1,9 @@
 #include "uv.h"
 
-#include "hb/test_harness.h"
-#include "hb/endpoint.h"
-#include "hb/error.h"
-#include "hb/log.h"
+#include "tn/test_harness.h"
+#include "tn/endpoint.h"
+#include "tn/error.h"
+#include "tn/log.h"
 
 TN_TEST_CASE_BEGIN(test_endpoint)
 	char buf[255];

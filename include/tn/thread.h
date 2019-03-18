@@ -7,7 +7,7 @@
 #	include <pthread.h>
 #endif
 
-#include "hb/time.h"
+#include "tn/time.h"
 
 
 #define TN_TIME_MS_PER_S 1000

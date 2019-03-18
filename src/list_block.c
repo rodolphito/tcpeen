@@ -1,11 +1,11 @@
-#include "hb/list_block.h"
+#include "tn/list_block.h"
 
 #if (tn_list_block_IMPL == tn_list_block_IMPL_AWS_ARRAY_LIST)
 
 #include "aws/common/array_list.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-#include "hb/test_harness.h"
-#include "hb/buffer.h"
-#include "hb/buffer_pool.h"
+#include "tn/test_harness.h"
+#include "tn/buffer.h"
+#include "tn/buffer_pool.h"
 
 TN_TEST_CASE_BEGIN(test_buffer)
 	tn_buffer_pool_t pool;

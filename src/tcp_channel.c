@@ -1,10 +1,10 @@
-#include "hb/tcp_channel.h"
+#include "tn/tcp_channel.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/tcp_service.h"
-#include "hb/buffer.h"
-#include "hb/buffer_pool.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/tcp_service.h"
+#include "tn/buffer.h"
+#include "tn/buffer_pool.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@
 #include "aws/common/byte_order.h"
 #include "aws/common/byte_buf.h"
 
-#include "hb/mutex.h"
+#include "tn/mutex.h"
 
 // forwards
 struct tn_buffer_pool_s;

@@ -1,11 +1,11 @@
-#include "hb/test_harness.h"
+#include "tn/test_harness.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
-#include "hb/atomic.h"
-#include "hb/thread.h"
-#include "hb/queue_spsc.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
+#include "tn/atomic.h"
+#include "tn/thread.h"
+#include "tn/queue_spsc.h"
 
 
 static uint64_t queue_capacity = (1 << 25);// (1 << 10);

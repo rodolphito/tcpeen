@@ -16,11 +16,11 @@
 
 // project includes
 #include "tcplg/cmdargs.h"
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
-#include "hb/tcp_context.h"
-#include "hb/tcp_connection.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
+#include "tn/tcp_context.h"
+#include "tn/tcp_connection.h"
 
 
 // global app state and statistics

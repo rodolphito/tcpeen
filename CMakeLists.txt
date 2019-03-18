@@ -5,8 +5,8 @@ project(tcpeen LANGUAGES C)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/deps/aws-c-common/cmake ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 include(AwsTestHarness)
-include(hbGeneral)
-include(hbTesting)
+include(tnGeneral)
+include(tnTesting)
 enable_testing()
 
 set(TN_TARGET_LINK_LIBS "")
@@ -72,48 +72,48 @@ list(APPEND TN_TARGET_LINK_LIBS aws-c-common)
 include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 set(TCP_LIBRARY_SRCS
 	src/log.c
-	include/hb/log.h
+	include/tn/log.h
 	src/endpoint.c
-	include/hb/endpoint.h
+	include/tn/endpoint.h
 	src/uuid.c
-	include/hb/uuid.h
+	include/tn/uuid.h
 	src/time.c
-	include/hb/time.h
+	include/tn/time.h
 	src/list_ptr.c
-	include/hb/list_ptr.h
+	include/tn/list_ptr.h
 	src/list_block.c
-	include/hb/list_block.h
+	include/tn/list_block.h
 	src/map.c
-	include/hb/map.h
+	include/tn/map.h
 	src/queue_spsc.c
-	include/hb/queue_spsc.h
+	include/tn/queue_spsc.h
 	src/allocator.c
-	include/hb/allocator.h
+	include/tn/allocator.h
 	src/thread.c
-	include/hb/thread.h
+	include/tn/thread.h
 	src/mutex.c
-	include/hb/mutex.h
+	include/tn/mutex.h
 	src/atomic.c
-	include/hb/atomic.h
+	include/tn/atomic.h
 	src/buffer.c
-	include/hb/buffer.h
+	include/tn/buffer.h
 	src/buffer_pool.c
-	include/hb/buffer_pool.h
+	include/tn/buffer_pool.h
 	src/event.c
-	include/hb/event.h
+	include/tn/event.h
 	src/tcp_connection.c
-	include/hb/tcp_connection.h
+	include/tn/tcp_connection.h
 	src/tcp_context.c
-	include/hb/tcp_context.h
+	include/tn/tcp_context.h
 	src/tcp_service.c
-	include/hb/tcp_service.h
+	include/tn/tcp_service.h
 	src/tcp_service_internal.c
 	src/tcp_service_internal.h
 	src/tcp_channel.c
-	include/hb/tcp_channel.h
-	include/hb/error.h
-	include/hb/test_harness.h
-	include/hb/config.h
+	include/tn/tcp_channel.h
+	include/tn/error.h
+	include/tn/test_harness.h
+	include/tn/config.h
 )
 add_library(tcpeen ${TCP_LIBRARY_SRCS})
 target_link_libraries(tcpeen ${TN_TARGET_LINK_LIBS})

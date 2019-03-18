@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "hb/config.h"
-#include "hb/thread.h"
+#include "tn/config.h"
+#include "tn/thread.h"
 
 
 #if _MSC_VER

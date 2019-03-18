@@ -1,11 +1,11 @@
-#include "hb/tcp_connection.h"
+#include "tn/tcp_connection.h"
 
 #include "aws/common/byte_buf.h"
 #include "aws/common/clock.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
 
 
 // lib uv async callbacks

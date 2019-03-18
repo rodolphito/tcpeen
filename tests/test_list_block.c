@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include "hb/test_harness.h"
-#include "hb/list_block.h"
+#include "tn/test_harness.h"
+#include "tn/list_block.h"
 
 TN_TEST_CASE_BEGIN(list_block_create)
 	tn_list_block_t list;

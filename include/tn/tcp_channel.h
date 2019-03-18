@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#include "hb/list_ptr.h"
-#include "hb/endpoint.h"
-#include "hb/buffer.h"
+#include "tn/list_ptr.h"
+#include "tn/endpoint.h"
+#include "tn/buffer.h"
 
 // forwards
 struct tcp_service_s;

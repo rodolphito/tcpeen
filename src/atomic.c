@@ -1,4 +1,4 @@
-#include "hb/atomic.h"
+#include "tn/atomic.h"
 
 #include "aws/common/atomics.h"
 

@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#include "hb/queue_spsc.h"
-#include "hb/endpoint.h"
-#include "hb/buffer.h"
+#include "tn/queue_spsc.h"
+#include "tn/endpoint.h"
+#include "tn/buffer.h"
 
 
 #define TN_EVENT_MAX_SIZE 256

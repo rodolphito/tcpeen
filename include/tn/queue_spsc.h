@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#include "hb/atomic.h"
+#include "tn/atomic.h"
 
 
 #define TN_CACHE_LINE_SIZE 64

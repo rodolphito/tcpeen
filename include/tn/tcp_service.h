@@ -3,12 +3,12 @@
 
 #include <stdint.h>
 
-#include "hb/thread.h"
-#include "hb/tcp_channel.h"
-#include "hb/endpoint.h"
-#include "hb/buffer_pool.h"
-#include "hb/event.h"
-#include "hb/queue_spsc.h"
+#include "tn/thread.h"
+#include "tn/tcp_channel.h"
+#include "tn/endpoint.h"
+#include "tn/buffer_pool.h"
+#include "tn/event.h"
+#include "tn/queue_spsc.h"
 
 
 #define TN_SERVICE_MAX_CLIENTS 10000
@@ -93,7 +93,9 @@ int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_ev
 int tcp_service_events_release(tcp_service_t *service);
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);
 
+
 int tcp_service_stats_clear(tcp_service_t *service);
 int tcp_service_stats_get(tcp_service_t *service, tcp_service_stats_t *stats);
+
 
 #endif

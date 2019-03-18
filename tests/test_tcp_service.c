@@ -1,6 +1,6 @@
-#include "hb/test_harness.h"
-#include "hb/thread.h"
-#include "hb/tcp_service.h"
+#include "tn/test_harness.h"
+#include "tn/thread.h"
+#include "tn/tcp_service.h"
 
 TN_TEST_CASE_BEGIN(test_service)
 	tcp_service_t tcp_service = {

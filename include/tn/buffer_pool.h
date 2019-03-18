@@ -6,9 +6,9 @@
 #include "aws/common/byte_order.h"
 #include "aws/common/byte_buf.h"
 
-#include "hb/mutex.h"
-#include "hb/queue_spsc.h"
-#include "hb/buffer.h"
+#include "tn/mutex.h"
+#include "tn/queue_spsc.h"
+#include "tn/buffer.h"
 
 
 typedef struct tn_buffer_pool_s {

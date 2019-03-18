@@ -1,8 +1,9 @@
-#include "hb/tcp_context.h"
+#include "tn/tcp_context.h"
 
 #include <string.h>
 
-#include "hb/allocator.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
 
 
 // --------------------------------------------------------------------------------------------------------------
@@ -46,7 +47,7 @@ int tcp_context_set_config(tcp_ctx_t *ctx, tcp_ctx_config_t *cfg)
 
 	memcpy(ctx->config, cfg, sizeof(tcp_ctx_config_t));
 
-	return 0;
+	return TN_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------

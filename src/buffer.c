@@ -1,9 +1,9 @@
-#include "hb/buffer.h"
+#include "tn/buffer.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
-#include "hb/buffer_pool.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
+#include "tn/buffer_pool.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

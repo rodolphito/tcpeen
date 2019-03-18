@@ -1,10 +1,10 @@
-#include "hb/uuid.h"
+#include "tn/uuid.h"
 
 #include "aws/common/uuid.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
 
 // --------------------------------------------------------------------------------------------------------------
 tn_uuid_t *tn_uuid_new(void)

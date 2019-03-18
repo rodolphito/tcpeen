@@ -1,11 +1,11 @@
-#include "hb/queue_spsc.h"
+#include "tn/queue_spsc.h"
 
 #include "aws/common/atomics.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/log.h"
-#include "hb/atomic.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/log.h"
+#include "tn/atomic.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

@@ -25,7 +25,7 @@
 #	include <windows.h>
 #endif
 
-#include "hb/log.h"
+#include "tn/log.h"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -1,10 +1,10 @@
-#include "hb/thread.h"
+#include "tn/thread.h"
 
 #include "aws/common/thread.h"
 
-#include "hb/error.h"
-#include "hb/log.h"
-#include "hb/allocator.h"
+#include "tn/error.h"
+#include "tn/log.h"
+#include "tn/allocator.h"
 
 
 // --------------------------------------------------------------------------------------------------------------

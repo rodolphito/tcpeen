@@ -1,8 +1,8 @@
-#include "hb/endpoint.h"
+#include "tn/endpoint.h"
 
 #include "uv.h"
 
-#include "hb/error.h"
+#include "tn/error.h"
 
 // --------------------------------------------------------------------------------------------------------------
 int tn_endpoint_get_string(tn_endpoint_t *endpoint, char *buf, int buf_len)

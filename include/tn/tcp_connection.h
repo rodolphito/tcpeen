@@ -5,11 +5,11 @@
 
 #include "uv.h"
 
-#include "hb/allocator.h"
-#include "hb/endpoint.h"
-#include "hb/tcp_context.h"
-#include "hb/buffer.h"
-#include "hb/tcp_channel.h"
+#include "tn/allocator.h"
+#include "tn/endpoint.h"
+#include "tn/tcp_context.h"
+#include "tn/buffer.h"
+#include "tn/tcp_channel.h"
 
 #if _MSC_VER
 #	define UV_BUFLEN_CAST(x) (ULONG)x

@@ -1,8 +1,8 @@
-#include "hb/event.h"
+#include "tn/event.h"
 
-#include "hb/error.h"
-#include "hb/allocator.h"
-#include "hb/buffer.h"
+#include "tn/error.h"
+#include "tn/allocator.h"
+#include "tn/buffer.h"
 
 
 // --------------------------------------------------------------------------------------------------------------
