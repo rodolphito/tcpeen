@@ -387,6 +387,7 @@ void uv__platform_invalidate_fd(uv_loop_t* loop, int fd) {
   uintptr_t nfds;
 
   assert(loop->watchers != NULL);
+  assert(fd >= 0);
 
   events = (struct kevent*) loop->watchers[loop->nwatchers];
   nfds = (uintptr_t) loop->watchers[loop->nwatchers + 1];
@@ -489,8 +490,11 @@ int uv_fs_event_start(uv_fs_event_t* handle,
     return UV__ERR(errno);
 
   handle->path = uv__strdup(path);
-  if (handle->path == NULL)
+  if (handle->path == NULL) {
+    uv__close_nocheckstdio(fd);
     return UV_ENOMEM;
+  }
+
   handle->cb = cb;
   uv__handle_start(handle);
   uv__io_init(&handle->event_watcher, uv__fs_event, fd);

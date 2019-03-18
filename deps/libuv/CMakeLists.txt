@@ -149,9 +149,11 @@ set(uv_test_sources
     test/test-timer-from-check.c
     test/test-timer.c
     test/test-tmpdir.c
+    test/test-tty-duplicate-key.c
     test/test-tty.c
     test/test-udp-alloc-cb-fail.c
     test/test-udp-bind.c
+    test/test-udp-connect.c
     test/test-udp-create-socket-early.c
     test/test-udp-dgram-too-big.c
     test/test-udp-ipv6.c
@@ -305,21 +307,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
   list(APPEND uv_sources src/unix/openbsd.c)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "OS400")
-  list(APPEND uv_cflags -Wno-attributes)
-  list(APPEND uv_defines
-       _ALL_SOURCE
-       _LINUX_SOURCE_COMPAT
-       _THREAD_SAFE
-       _XOPEN_SOURCE=500)
-  list(APPEND uv_sources
-       src/unix/aix-common.c
-       src/unix/ibmi.c
-       src/unix/posix-poll.c
-       src/unix/no-fsevents.c
-       src/unix/no-proctitle.c)
-endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL "OS/390")
   list(APPEND uv_defines PATH_MAX=255)
   list(APPEND uv_defines _AE_BIMODAL)
@@ -365,7 +352,8 @@ target_link_libraries(uv_a ${uv_libraries})
 if(BUILD_TESTING)
   include(CTest)
   add_executable(uv_run_tests ${uv_test_sources})
-  target_compile_definitions(uv_run_tests PRIVATE ${uv_defines})
+  target_compile_definitions(uv_run_tests
+                             PRIVATE ${uv_defines} USING_UV_SHARED=1)
   target_compile_options(uv_run_tests PRIVATE ${uv_cflags})
   target_include_directories(uv_run_tests PRIVATE include)
   target_link_libraries(uv_run_tests uv ${uv_test_libraries})
@@ -397,7 +385,7 @@ if(UNIX)
 
   install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
-  install(FILES LICENSE ${CMAKE_CURRENT_BINARY_DIR}/libuv.pc
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libuv.pc
           DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
   install(TARGETS uv LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(TARGETS uv_a ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
