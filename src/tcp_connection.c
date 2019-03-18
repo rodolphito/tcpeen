@@ -129,7 +129,8 @@ void on_tcp_connected_cb(uv_connect_t *connection, int status)
 	tcp_conn_t *conn = (tcp_conn_t *)connection->data;
 
 	if (status < 0) {
-		tn_log_uv_error(status);
+		//conn->read_err = status;
+		//tn_log_uv_error(status);
 		goto fail;
 	}
 
