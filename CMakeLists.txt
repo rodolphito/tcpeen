@@ -20,9 +20,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(NOT WIN32)
-	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -std=c99")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99")
 	if(NOT APPLE)
-		set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pie")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
 	endif()
 else()
 	set(CompilerFlags
