@@ -37,7 +37,8 @@ int main(void)
 
 	TN_GUARD(tn_system_setup(&system));
 
-	tn_system_cpu_count(&system);
+	uint32_t cores = tn_system_cpu_count(&system);
+	tn_thread_set_workers(cores);
 
 	TN_GUARD(tcp_service_setup(&tcp_service));
 

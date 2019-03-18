@@ -61,3 +61,31 @@ void tn_thread_cleanup(tn_thread_t *thread)
 	assert(thread);
 	aws_thread_clean_up((struct aws_thread *)thread);
 }
+
+// --------------------------------------------------------------------------------------------------------------
+uint32_t tn_thread_workers(void)
+{
+	int rv;
+	const char *val;
+	TN_GUARD_NULL_CLEANUP(val = getenv("UV_THREADPOOL_SIZE"))
+
+	rv = atoi(val);
+	TN_GUARD(rv <= 0);
+
+	return (uint32_t)rv;
+
+cleanup:
+	return (uint32_t)4;
+}
+
+// --------------------------------------------------------------------------------------------------------------
+int tn_thread_set_workers(uint32_t count)
+{
+	TN_GUARD(count > TN_WORKERS_MAX);
+
+	char buf[255];
+	snprintf(buf, 255, "UV_THREADPOOL_SIZE=%lu", count);
+
+	TN_GUARD(putenv(buf));
+	return TN_SUCCESS;
+}

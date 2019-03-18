@@ -22,6 +22,8 @@
 #define TN_THREAD_SLEEP_S(s) aws_thread_current_sleep(ms * TN_TIME_NS_PER_S)
 #define TN_THREAD_SLEEP_MS(ms) aws_thread_current_sleep(ms * TN_TIME_NS_PER_MS)
 
+#define TN_WORKERS_MAX 128
+
 
 enum tn_thread_state {
 	TN_THREAD_NEW,
@@ -55,7 +57,8 @@ enum tn_thread_state tn_thread_get_state(tn_thread_t *thread);
 int tn_thread_join(tn_thread_t *thread);
 void tn_thread_cleanup(tn_thread_t *thread);
 
-
+uint32_t tn_thread_workers(void);
+int tn_thread_set_workers(uint32_t count);
 
 
 
