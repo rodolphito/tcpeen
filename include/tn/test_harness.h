@@ -13,7 +13,6 @@
 	(void)ctx; \
 	(void)allocator; \
 
-#define TN_TEST_CASE_END }
 
 #include "tn/error.h"
 
