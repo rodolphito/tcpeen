@@ -1,6 +1,7 @@
 #include "tn/thread.h"
 
 #include "aws/common/thread.h"
+#include "uv.h"
 
 #include "tn/error.h"
 #include "tn/log.h"
@@ -66,26 +67,27 @@ void tn_thread_cleanup(tn_thread_t *thread)
 uint32_t tn_thread_workers(void)
 {
 	int rv;
-	const char *val;
-	TN_GUARD_NULL_CLEANUP(val = getenv("UV_THREADPOOL_SIZE"))
+	char buf[255];
+	size_t sz = 255;
 
-	rv = atoi(val);
-	TN_GUARD(rv <= 0);
+	TN_GUARD_CLEANUP(uv_os_getenv("UV_THREADPOOL_SIZE", buf, &sz));
+	rv = atoi(buf);
+	TN_GUARD_CLEANUP(rv <= 0);
 
 	return (uint32_t)rv;
 
 cleanup:
-	return (uint32_t)4;
+	return 4UL;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tn_thread_set_workers(uint32_t count)
 {
+	TN_GUARD_NULL(count);
 	TN_GUARD(count > TN_WORKERS_MAX);
 
 	char buf[255];
-	snprintf(buf, 255, "UV_THREADPOOL_SIZE=%lu", count);
-
-	TN_GUARD(putenv(buf));
+	snprintf(buf, 255, "%lu", count);
+	TN_GUARD(uv_os_setenv("UV_THREADPOOL_SIZE", buf));
 	return TN_SUCCESS;
 }
