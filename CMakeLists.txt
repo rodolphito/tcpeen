@@ -193,13 +193,25 @@ include_directories(${CMAKE_SOURCE_DIR}/deps/unity)
 set(TCP_PLUGIN_SRCS
 	src/unity/tcpeen_unity.c
 )
-add_library(tcpeen_unity SHARED ${TCP_PLUGIN_SRCS})
+add_library(tcpeen_unity MODULE ${TCP_PLUGIN_SRCS})
 target_link_libraries(tcpeen_unity ${TN_TARGET_LINK_LIBS})
 target_compile_definitions(tcpeen_unity PRIVATE ${TN_TARGET_COMPILE_DEFS})
-add_custom_command(
-	TARGET tcpeen_unity
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy
-		$<TARGET_FILE:tcpeen_unity>
-		${CMAKE_SOURCE_DIR}/UnityProject/Assets/TCPeen/Plugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>
-)
+
+if(NOT APPLE)
+	add_custom_command(
+		TARGET tcpeen_unity
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+			$<TARGET_FILE:tcpeen_unity>
+			${CMAKE_SOURCE_DIR}/UnityProject/Assets/TCPeen/Plugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>
+	)
+else()
+	set_target_properties(tcpeen_unity PROPERTIES BUNDLE TRUE)
+	add_custom_command(
+		TARGET tcpeen_unity
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+			$<TARGET_FILE:tcpeen_unity>
+			${CMAKE_SOURCE_DIR}/UnityProject/Assets/TCPeen/Plugins/x86_64/$<TARGET_FILE_NAME:tcpeen_unity>.bundle
+	)
+endif()

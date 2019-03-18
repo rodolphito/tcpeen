@@ -143,18 +143,18 @@ namespace TCPeen
                 {
                 case EventType.HB_EVENT_CLIENT_OPEN:
                     EventClientOpen *evtOpen = (EventClientOpen *)evtPtr[e];
-                    //UnityEngine.Debug.LogFormat("Connected Event -- ID# {0}", evtOpen->client_id);
-                    //UnityEngine.Debug.LogFormat("Endpoints: {0} -> {1}", Marshal.PtrToStringAnsi((IntPtr)evtOpen->host_remote), Marshal.PtrToStringAnsi((IntPtr)evtOpen->host_local));
+                    UnityEngine.Debug.LogFormat("Connected Event -- ID# {0}", evtOpen->client_id);
+                    UnityEngine.Debug.LogFormat("Endpoints: {0} -> {1}", Marshal.PtrToStringAnsi((IntPtr)evtOpen->host_remote), Marshal.PtrToStringAnsi((IntPtr)evtOpen->host_local));
                     break;
                 case EventType.HB_EVENT_CLIENT_CLOSE:
                     EventClientClose *evtClose = (EventClientClose*)evtPtr[e];
-                    //UnityEngine.Debug.LogFormat("Disconnected Event -- ID# {0}", evtClose->client_id);
+                    UnityEngine.Debug.LogFormat("Disconnected Event -- ID# {0}", evtClose->client_id);
                     break;
                 case EventType.HB_EVENT_CLIENT_READ:
                     EventClientRead *evtRead = (EventClientRead *)evtPtr[e];
-                    //IntPtr buffer = (IntPtr)evtRead->buffer;
-                    //UnityEngine.Debug.LogFormat("Receive Event -- ID# {0}", evtRead->client_id);
-                    //UnityEngine.Debug.LogFormat("Received {0} bytes: {1}", evtRead->length, Marshal.PtrToStringAnsi(IntPtr.Add(buffer, 4)));
+                    IntPtr buffer = (IntPtr)evtRead->buffer;
+                    UnityEngine.Debug.LogFormat("Receive Event -- ID# {0}", evtRead->client_id);
+                    UnityEngine.Debug.LogFormat("Received {0} bytes: {1}", evtRead->len, Marshal.PtrToStringAnsi(IntPtr.Add(buffer, 4)));
 
                     if (tcpeen_service_send(evtRead->client_id, evtRead->buffer, evtRead->len) != 0)
                     {
