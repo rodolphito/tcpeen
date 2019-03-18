@@ -62,7 +62,10 @@ struct sockaddr_storage g_sock_peer;
 uint64_t start_ticks = 0;
 uint64_t current_ticks = 0;
 uint64_t transmit_ticks = 0;
-double elapsed = 0.0;
+uint64_t elapsed_ms = 0;
+uint64_t elapsed_since_io = 0;
+uint64_t last_recv_msgs = 0;
+uint64_t transmit_time_ms = 0;
 
 int tty_wait_frames = 0;
 char tty_data[1024];
@@ -85,13 +88,16 @@ void on_tick_cb(uv_timer_t *req)
 	}
 
 	current_ticks = tn_tstamp();
-	uint64_t tick_diff = (current_ticks - start_ticks);
+	const uint64_t tick_diff = (current_ticks - start_ticks);
 	if (tick_diff < transmit_ticks) {
 		return;
 	}
 	start_ticks = current_ticks;
 
-	elapsed += (double)tick_diff / (double)AWS_TIMESTAMP_NANOS;
+	const uint64_t tick_diff_ms = tn_tstamp_convert(tick_diff, TN_TSTAMP_NS, TN_TSTAMP_MS);
+	elapsed_ms += tick_diff_ms;
+	elapsed_since_io += tick_diff_ms;
+
 	uv_buf_t buf;
 	buf.base = tty_data;
 	size_t phase = g_appstate;
@@ -131,11 +137,12 @@ void on_tick_cb(uv_timer_t *req)
 		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
 
 		if (connected >= g_num_conns) {
-			elapsed = 0.0;
+			elapsed_ms = 0;
 			g_appstate++;
 			printf("\n\nTransmitting Data =============================================\n\n\n\n\n");
 		}
 	} else if (phase == 2) {
+		int done_send = (elapsed_ms > transmit_time_ms);
 		size_t connected = 0, connecting = 0, failed = 0;
 		int conns_made = 0;
 		int conns_max = g_num_conns;
@@ -160,6 +167,8 @@ void on_tick_cb(uv_timer_t *req)
 				do_connect = 1;
 			}
 
+			if (done_send) continue;
+
 			if (do_connect && conns_made < conns_max) {
 				// tcp_connect_begin(&g_tcp_conns[i], cmdline_args.host, cmdline_args.port);
 				// conns_made++;
@@ -176,43 +185,44 @@ void on_tick_cb(uv_timer_t *req)
 			rbytes_str, g_tcp_ctx->recv_bytes, space_str);
 		if (g_tty_enabled) uv_write(&g_write_req, (uv_stream_t*)&g_tty, &buf, 1, NULL);
 
-		if (elapsed > (double)cmdline_args.time) {
-			elapsed = 0.0;
+		if (last_recv_msgs != g_tcp_ctx->recv_msgs) {
+			elapsed_since_io = 0;
+			last_recv_msgs = g_tcp_ctx->recv_msgs;
+		}
+
+		if (done_send && elapsed_since_io > 6000) {
+			elapsed_ms = 0;
 			g_appstate++;
 			g_failed = 0;
-			printf("\n\nWaiting for last messages =====================================\n");
 		}
 	} else if (phase == 3) {
-		if (elapsed > 4.0) {
-			for (int i = 0; i < g_num_conns; i++) {
-				tcp_conn_disconnect(&g_tcp_conns[i]);
-			}
-
-			elapsed = 0.0;
-			g_appstate++;
-
-			printf("\n\nCleaning up ===================================================\n");
-			printf("Msgs recv: %llu / Msgs send: %llu\n", g_tcp_ctx->recv_msgs, g_tcp_ctx->send_msgs);
-			printf("Bytes recv: %llu / Bytes send: %llu\n", g_tcp_ctx->recv_bytes, g_tcp_ctx->send_bytes);
-			printf("\n");
-			printf("\n");
-
-			uint64_t latency_max = 0;
-			uint64_t latency_total = 0;
-			uint64_t latency_avg = 0;
-			uint64_t msgs_total = 0;
-			for (int i = 0; i < g_num_conns; i++) {
-				if (g_tcp_conns[i].latency_max > latency_max) {
-					latency_max = g_tcp_conns[i].latency_max;
-				}
-				latency_total += g_tcp_conns[i].latency_total;
-				msgs_total += g_tcp_conns[i].recv_msgs;
-			}
-			latency_avg = latency_total / msgs_total;
-
-			printf("worst observed latency: %llu\n", latency_max);
-			printf("average latency: %llu\n", latency_avg);
+		for (int i = 0; i < g_num_conns; i++) {
+			tcp_conn_disconnect(&g_tcp_conns[i]);
 		}
+
+		elapsed_ms = 0;
+		g_appstate++;
+
+		printf("\n\nFinal Stats ===================================================\n");
+		printf("Msgs recv: %llu / Msgs send: %llu\n", g_tcp_ctx->recv_msgs, g_tcp_ctx->send_msgs);
+		printf("Bytes recv: %llu / Bytes send: %llu\n", g_tcp_ctx->recv_bytes, g_tcp_ctx->send_bytes);
+		printf("\n");
+
+		uint64_t latency_max = 0;
+		uint64_t latency_total = 0;
+		uint64_t latency_avg = 0;
+		uint64_t msgs_total = 0;
+		for (int i = 0; i < g_num_conns; i++) {
+			if (g_tcp_conns[i].latency_max > latency_max) {
+				latency_max = g_tcp_conns[i].latency_max;
+			}
+			latency_total += g_tcp_conns[i].latency_total;
+			msgs_total += g_tcp_conns[i].recv_msgs;
+		}
+		latency_avg = latency_total / msgs_total;
+
+		printf("Worst latency: %llu\n", latency_max);
+		printf("Average latency: %llu\n", latency_avg);
 	} else if (phase == 4) {
 		g_appstate++;
 
@@ -319,6 +329,7 @@ int main(int argc, char **argv)
 		transmit_ticks = AWS_TIMESTAMP_NANOS / cmdline_args.rate;
 	}
 
+	transmit_time_ms = tn_tstamp_convert((uint64_t)cmdline_args.time, TN_TSTAMP_S, TN_TSTAMP_MS);
 
 	g_num_conns = cmdline_args.clients;
 	g_tcp_conns = (tcp_conn_t *)TN_MEM_ACQUIRE(sizeof(tcp_conn_t) * g_num_conns);
