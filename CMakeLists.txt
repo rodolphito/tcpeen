@@ -20,8 +20,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(NOT WIN32)
-	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pie")
+	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC -std=c99")
+	if(NOT APPLE)
+		set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pie")
+	endif()
 else()
 	set(CompilerFlags
 		CMAKE_CXX_FLAGS
@@ -151,7 +153,7 @@ target_link_libraries(tcpeen-tests ${TN_TARGET_LINK_LIBS})
 target_compile_definitions(tcpeen-tests PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 # runner for single test for easy debug step through an impl issue
-tn_test_single(test_event test_events "${TN_TARGET_LINK_LIBS}" "${TN_TARGET_COMPILE_DEFS}")
+#tn_test_single(test_event test_events "${TN_TARGET_LINK_LIBS}" "${TN_TARGET_COMPILE_DEFS}")
 
 #
 # build tcploadgen executable

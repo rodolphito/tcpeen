@@ -7,7 +7,7 @@
 
 
 // --------------------------------------------------------------------------------------------------------------
-int tn_buffer_setup(tn_buffer_t *buffer, uint8_t *src, size_t capacity)
+int tn_buffer_setup(tn_buffer_t *buffer, void *src, size_t capacity)
 {
 	assert(buffer && src && capacity);
 
@@ -18,7 +18,7 @@ int tn_buffer_setup(tn_buffer_t *buffer, uint8_t *src, size_t capacity)
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tn_buffer_read(tn_buffer_t *buffer, uint8_t *dst_buffer, size_t len)
+int tn_buffer_read(tn_buffer_t *buffer, void *dst_buffer, size_t len)
 {
 	assert(buffer);
 	assert(dst_buffer);
@@ -101,7 +101,7 @@ int tn_buffer_read_buffer(tn_buffer_t *buffer, tn_buffer_t *dst_buffer, size_t l
 }
 
 // --------------------------------------------------------------------------------------------------------------
-int tn_buffer_write(tn_buffer_t *buffer, uint8_t *src_buffer, size_t len)
+int tn_buffer_write(tn_buffer_t *buffer, void *src_buffer, size_t len)
 {
 	assert(buffer);
 	if (!aws_byte_buf_write(&buffer->buf, src_buffer, len)) return TN_ERROR;

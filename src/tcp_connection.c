@@ -287,7 +287,7 @@ void tcp_write_begin(uv_tcp_t *tcp_handle, char *data, int len, unsigned flags)
 		return;
 	}
 	write_req->req.data = conn;
-	write_req->buf = uv_buf_init(bb_data.buffer, UV_BUFLEN_CAST(bb_data.len - fake_frag));
+	write_req->buf = uv_buf_init((char *)bb_data.buffer, UV_BUFLEN_CAST(bb_data.len - fake_frag));
 
 	if ((ret = uv_write((uv_write_t *)write_req, (uv_stream_t *)tcp_handle, &write_req->buf, 1, on_tcp_write_cb))) {
 		tn_log_uv_error(ret);

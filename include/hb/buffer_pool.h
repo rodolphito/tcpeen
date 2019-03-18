@@ -8,9 +8,7 @@
 
 #include "hb/mutex.h"
 #include "hb/queue_spsc.h"
-
-
-typedef struct tn_buffer_s tn_buffer_t;
+#include "hb/buffer.h"
 
 
 typedef struct tn_buffer_pool_s {

@@ -9,7 +9,7 @@
 #include "hb/mutex.h"
 
 // forwards
-typedef struct tn_buffer_pool_s tn_buffer_pool_t;
+struct tn_buffer_pool_s;
 
 typedef struct tn_buffer_span_s {
 	size_t len;
@@ -17,16 +17,16 @@ typedef struct tn_buffer_span_s {
 } tn_buffer_span_t;
 
 typedef struct tn_buffer_s {
-	tn_buffer_pool_t *pool;
+	struct tn_buffer_pool_s *pool;
 	struct aws_byte_buf buf;
 	struct aws_byte_cursor pos;
 	size_t capacity;
 } tn_buffer_t;
 
 
-int tn_buffer_setup(tn_buffer_t *buffer, uint8_t *src, size_t capacity);
+int tn_buffer_setup(tn_buffer_t *buffer, void *src, size_t capacity);
 
-int tn_buffer_read(tn_buffer_t *buffer, uint8_t *dst_buffer, size_t len);
+int tn_buffer_read(tn_buffer_t *buffer, void *dst_buffer, size_t len);
 int tn_buffer_read_seek(tn_buffer_t *buffer, tn_buffer_span_t *span);
 int tn_buffer_read_skip(tn_buffer_t *buffer, size_t len);
 int tn_buffer_read_u8(tn_buffer_t *buffer, uint8_t *out_val);
@@ -34,7 +34,7 @@ int tn_buffer_read_be16(tn_buffer_t *buffer, uint16_t *out_val);
 int tn_buffer_read_be32(tn_buffer_t *buffer, uint32_t *out_val);
 int tn_buffer_read_be64(tn_buffer_t *buffer, uint64_t *out_val);
 int tn_buffer_read_buffer(tn_buffer_t *buffer, tn_buffer_t *dst_buffer, size_t len);
-int tn_buffer_write(tn_buffer_t *buffer, uint8_t *src_buffer, size_t len);
+int tn_buffer_write(tn_buffer_t *buffer, void *src_buffer, size_t len);
 int tn_buffer_write_u8(tn_buffer_t *buffer, uint8_t val);
 int tn_buffer_write_be16(tn_buffer_t *buffer, uint16_t val);
 int tn_buffer_write_be32(tn_buffer_t *buffer, uint32_t val);

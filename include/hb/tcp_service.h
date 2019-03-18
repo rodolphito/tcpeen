@@ -16,7 +16,7 @@
 
 
 // forwards
-typedef struct tcp_service_write_req_s tcp_service_write_req_t;
+struct tcp_service_write_req_s;
 
 
 typedef enum tcp_service_state_e {
@@ -67,7 +67,7 @@ typedef struct tcp_service_s {
 	uint64_t buffer_count;
 
 	/* write request pool for main thread */
-	tcp_service_write_req_t *write_reqs;
+	struct tcp_service_write_req_s *write_reqs;
 
 	/* write request free list for IO thread --> main thread */
 	tn_queue_spsc_t write_reqs_free;
@@ -92,11 +92,6 @@ tcp_service_state_t tcp_service_state(tcp_service_t *service);
 int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_evt_base, uint64_t *out_count);
 int tcp_service_events_release(tcp_service_t *service);
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen);
-
-int tcp_service_write_req_acquire(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
-int tcp_service_write_req_next(tcp_service_t *service, tcp_service_write_req_t **out_write_req);
-uint64_t tcp_service_write_req_count(tcp_service_t *service);
-int tcp_service_write_req_release(tcp_service_t *service, tcp_service_write_req_t *write_req);
 
 int tcp_service_stats_clear(tcp_service_t *service);
 int tcp_service_stats_get(tcp_service_t *service, tcp_service_stats_t *stats);

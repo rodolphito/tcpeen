@@ -148,7 +148,7 @@ int uvu_server_start(const char *ipstr, uint16_t port)
 	if (!uvu_thread_priv) {
 		return UV_ENOMEM;
 	}
-	memset(uvu_thread_priv, 0, sizeof(uvu_thread_priv));
+	memset(uvu_thread_priv, 0, sizeof(*uvu_thread_priv));
 
 	if ((uvret = uv_ip6_addr(ipstr, port, (struct sockaddr_in6 *)&uvu_thread_priv->listen_addr))) {
 		if ((uvret = uv_ip4_addr(ipstr, port, (struct sockaddr_in *)&uvu_thread_priv->listen_addr))) {

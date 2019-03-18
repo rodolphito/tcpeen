@@ -26,8 +26,8 @@ TN_TEST_CASE_BEGIN(list_block_ops)
 	uint64_t *p0 = &data0;
 	uint64_t *p1 = &data1;
 	uint64_t *out = NULL;
-	size_t count = 0;
-	size_t index = 0;
+	uint64_t count = 0;
+	uint64_t index = 0;
 
 	ASSERT_SUCCESS(tn_list_block_setup(&list, 128, sizeof(uintptr_t)));
 

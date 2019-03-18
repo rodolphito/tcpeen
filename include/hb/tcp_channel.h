@@ -8,8 +8,7 @@
 #include "hb/buffer.h"
 
 // forwards
-typedef struct tcp_service_s tcp_service_t;
-typedef struct tcp_buffer_s tcp_buffer_t;
+struct tcp_service_s;
 
 
 typedef enum tcp_channel_state_e {
@@ -33,7 +32,7 @@ typedef struct tcp_channel_s {
 	void *priv;
 	uint64_t id;
 	uint64_t list_id;
-	tcp_service_t *service;
+	struct tcp_service_s *service;
 	tn_buffer_t *read_buffer;
 	tn_endpoint_t endpoint;
 	int32_t error_code;

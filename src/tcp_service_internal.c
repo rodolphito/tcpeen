@@ -335,7 +335,7 @@ void on_prep_cb(uv_prepare_t *handle)
 			continue;
 		}
 
-		if (ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)send_req->channel->priv, &send_req->uv_buf, 1, on_send_cb)) {
+		if ((ret = uv_write((uv_write_t *)send_req, (uv_stream_t *)send_req->channel->priv, &send_req->uv_buf, 1, on_send_cb))) {
 			tn_log_error("IO send failed:  %d -- %s -- %s", ret, uv_err_name(ret), uv_strerror(ret));
 			tn_buffer_t *reqbuf = send_req->buffer;
 			send_req->buffer = NULL;

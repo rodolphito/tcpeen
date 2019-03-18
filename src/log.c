@@ -221,9 +221,9 @@ void tn_log_log(int level, const char *func, const char *file, int line, uint64_
 		time_buf[strftime(time_buf, sizeof(time_buf), "%H:%M:%S", local_time)] = '\0';
 
 		if (tn_log_ctx.color) {
-			fprintf(stderr, "%s %s%-5s\x1b[0m \x1b[90m%zu:%s:%d - %s: \x1b[0m ", time_buf, level_colors[level], level_names[level], thread_id, file, line, func);
+			fprintf(stderr, "%s %s%-5s\x1b[0m \x1b[90m%llu:%s:%d - %s: \x1b[0m ", time_buf, level_colors[level], level_names[level], thread_id, file, line, func);
 		} else {
-			fprintf(stderr, "%s %-5s %zu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
+			fprintf(stderr, "%s %-5s %llu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
 		}
 
 		va_start(args, fmt);
@@ -237,7 +237,7 @@ void tn_log_log(int level, const char *func, const char *file, int line, uint64_
 		va_list args;
 		char time_buf[64];
 		time_buf[strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", local_time)] = '\0';
-		fprintf(tn_log_ctx.fp, "%s %-5s %zu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
+		fprintf(tn_log_ctx.fp, "%s %-5s %llu:%s:%d - %s: ", time_buf, level_names[level], thread_id, file, line, func);
 		va_start(args, fmt);
 		vfprintf(tn_log_ctx.fp, fmt, args);
 		va_end(args);

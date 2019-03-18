@@ -168,7 +168,7 @@ void on_tick_cb(uv_timer_t *req)
 			}
 		}
 
-		buf.len = sprintf(tty_data, "\033[4A\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s\033[1B\033[1000D%s%zu%s",
+		buf.len = sprintf(tty_data, "\033[4A\033[1000D%s%zu%s\033[1B\033[1000D%s%llu%s\033[1B\033[1000D%s%llu%s\033[1B\033[1000D%s%llu%s\033[1B\033[1000D%s%llu%s",
 			dropped_str, failed, space_str,
 			smsg_str, g_tcp_ctx->send_msgs, space_str,
 			rmsg_str, g_tcp_ctx->recv_msgs, space_str,
@@ -192,8 +192,8 @@ void on_tick_cb(uv_timer_t *req)
 			g_appstate++;
 
 			printf("\n\nCleaning up ===================================================\n");
-			printf("Msgs recv: %zu / Msgs send: %zu\n", g_tcp_ctx->recv_msgs, g_tcp_ctx->send_msgs);
-			printf("Bytes recv: %zu / Bytes send: %zu\n", g_tcp_ctx->recv_bytes, g_tcp_ctx->send_bytes);
+			printf("Msgs recv: %llu / Msgs send: %llu\n", g_tcp_ctx->recv_msgs, g_tcp_ctx->send_msgs);
+			printf("Bytes recv: %llu / Bytes send: %llu\n", g_tcp_ctx->recv_bytes, g_tcp_ctx->send_bytes);
 			printf("\n");
 			printf("\n");
 
@@ -210,8 +210,8 @@ void on_tick_cb(uv_timer_t *req)
 			}
 			latency_avg = latency_total / msgs_total;
 
-			printf("worst observed latency: %zu\n", latency_max);
-			printf("average latency: %zu\n", latency_avg);
+			printf("worst observed latency: %llu\n", latency_max);
+			printf("average latency: %llu\n", latency_avg);
 		}
 	} else if (phase == 4) {
 		g_appstate++;
