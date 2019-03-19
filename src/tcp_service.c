@@ -189,7 +189,7 @@ int tcp_service_stop(tcp_service_t *service)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_stop_signal(tcp_service_t *service)
 {
-	assert(service);
+	TN_ASSERT(service);
 	tcp_service_state_t state = tcp_service_state(service);
 	TN_GUARD(state == TCP_SERVICE_STOPPING || state == TCP_SERVICE_STOPPED);
 	tcp_service_set_state(service, TCP_SERVICE_STOPPING);
@@ -205,9 +205,9 @@ tcp_service_state_t tcp_service_state(tcp_service_t *service)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_evt_base, uint64_t *out_count)
 {
-	assert(service);
-	assert(out_evt_base);
-	assert(out_count);
+	TN_ASSERT(service);
+	TN_ASSERT(out_evt_base);
+	TN_ASSERT(out_count);
 
 	*out_evt_base = NULL;
 	*out_count = service->event_updates_count = 0;
@@ -223,7 +223,7 @@ int tcp_service_events_acquire(tcp_service_t *service, tn_event_base_t ***out_ev
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_events_release(tcp_service_t *service)
 {
-	assert(service);
+	TN_ASSERT(service);
 	
 	tn_event_client_read_t *evt_read;
 	for (size_t i = 0; i < service->event_updates_count; i++) {
@@ -248,9 +248,9 @@ int tcp_service_events_release(tcp_service_t *service)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_service_send(tcp_service_t *service, tcp_channel_t *channel, uint8_t *sndbuf, size_t sndlen)
 {
-	assert(service);
-	assert(channel);
-	assert(sndbuf && sndlen);
+	TN_ASSERT(service);
+	TN_ASSERT(channel);
+	TN_ASSERT(sndbuf && sndlen);
 
 	int ret;
 	tcp_service_write_req_t *send_req;

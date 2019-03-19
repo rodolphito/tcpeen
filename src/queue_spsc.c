@@ -11,8 +11,8 @@
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_setup(tn_queue_spsc_t *q, uint64_t capacity)
 {
-	assert(q);
-	assert(capacity > 0);
+	TN_ASSERT(q);
+	TN_ASSERT(capacity > 0);
 
 	if (capacity & (capacity - 1)) {
 		capacity--;
@@ -24,7 +24,7 @@ int tn_queue_spsc_setup(tn_queue_spsc_t *q, uint64_t capacity)
 		capacity |= capacity >> 32;
 		capacity++;
 	}
-	assert(!(capacity & (capacity - 1)));
+	TN_ASSERT(!(capacity & (capacity - 1)));
 
 	int ret = TN_ERROR_NOMEM;
 	q->buffer = NULL;
@@ -43,14 +43,14 @@ int tn_queue_spsc_setup(tn_queue_spsc_t *q, uint64_t capacity)
 // --------------------------------------------------------------------------------------------------------------
 void tn_queue_spsc_cleanup(tn_queue_spsc_t *q)
 {
-	assert(q);
+	TN_ASSERT(q);
 	TN_MEM_RELEASE(q->buffer);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 uint64_t tn_queue_spsc_count(tn_queue_spsc_t *q)
 {
-	assert(q);
+	TN_ASSERT(q);
 	const uint64_t head = tn_atomic_load_explicit(&q->head, TN_ATOMIC_RELAXED);
 	const uint64_t tail = tn_atomic_load(&q->tail);
 	return (head - tail);
@@ -59,7 +59,7 @@ uint64_t tn_queue_spsc_count(tn_queue_spsc_t *q)
 // --------------------------------------------------------------------------------------------------------------
 uint64_t tn_queue_spsc_capacity(tn_queue_spsc_t *q)
 {
-	assert(q);
+	TN_ASSERT(q);
 	return q->capacity;
 }
 
@@ -78,7 +78,7 @@ int tn_queue_spsc_full(tn_queue_spsc_t *q)
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_push(tn_queue_spsc_t *q, void *ptr)
 {
-	assert(q);
+	TN_ASSERT(q);
 
 	const uint64_t head = tn_atomic_load_explicit(&q->head, TN_ATOMIC_RELAXED);
 	const uint64_t tail = tn_atomic_load(&q->tail);
@@ -95,8 +95,8 @@ int tn_queue_spsc_push(tn_queue_spsc_t *q, void *ptr)
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_peek(tn_queue_spsc_t *q, void **out_ptr)
 {
-	assert(q);
-	assert(out_ptr);
+	TN_ASSERT(q);
+	TN_ASSERT(out_ptr);
 
 	*out_ptr = NULL;
 
@@ -114,7 +114,7 @@ int tn_queue_spsc_peek(tn_queue_spsc_t *q, void **out_ptr)
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_pop(tn_queue_spsc_t *q)
 {
-	assert(q);
+	TN_ASSERT(q);
 
 	const uint64_t tail = tn_atomic_load_explicit(&q->tail, TN_ATOMIC_RELAXED);
 	const uint64_t head = tn_atomic_load(&q->head);
@@ -135,8 +135,8 @@ void tn_queue_spsc_pop_cached(tn_queue_spsc_t *q)
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_pop_back(tn_queue_spsc_t *q, void **out_ptr)
 {
-	assert(q);
-	assert(out_ptr);
+	TN_ASSERT(q);
+	TN_ASSERT(out_ptr);
 
 	*out_ptr = NULL;
 
@@ -155,10 +155,10 @@ int tn_queue_spsc_pop_back(tn_queue_spsc_t *q, void **out_ptr)
 // --------------------------------------------------------------------------------------------------------------
 int tn_queue_spsc_pop_all(tn_queue_spsc_t *q, void **out_ptr, uint64_t *out_count)
 {
-	assert(q);
-	assert(out_ptr);
-	assert(out_count);
-	assert(*out_count > 0);
+	TN_ASSERT(q);
+	TN_ASSERT(out_ptr);
+	TN_ASSERT(out_count);
+	TN_ASSERT(*out_count > 0);
 
 	const uint64_t mask = q->mask;
 	const uint64_t tail = tn_atomic_load_explicit(&q->tail, TN_ATOMIC_RELAXED);

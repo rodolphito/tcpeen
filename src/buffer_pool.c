@@ -9,9 +9,9 @@
 // --------------------------------------------------------------------------------------------------------------
 int tn_buffer_pool_setup(tn_buffer_pool_t *pool, uint64_t block_count, uint64_t block_size)
 {
-	assert(pool);
-	assert(block_count > 0);
-	assert(block_size > 0);
+	TN_ASSERT(pool);
+	TN_ASSERT(block_count > 0);
+	TN_ASSERT(block_size > 0);
 
 	pool->block_count = block_count;
 	pool->block_size = block_size;
@@ -61,8 +61,8 @@ void tn_buffer_pool_cleanup(tn_buffer_pool_t *pool)
 // --------------------------------------------------------------------------------------------------------------
 int tn_buffer_pool_push(tn_buffer_pool_t *pool, tn_buffer_t *buffer)
 {
-	assert(pool);
-	assert(buffer);
+	TN_ASSERT(pool);
+	TN_ASSERT(buffer);
 
 	TN_GUARD(tn_queue_spsc_push(&pool->tn_buffers_free, buffer));
 
@@ -75,13 +75,13 @@ int tn_buffer_pool_push(tn_buffer_pool_t *pool, tn_buffer_t *buffer)
 // --------------------------------------------------------------------------------------------------------------
 int tn_buffer_pool_peek(tn_buffer_pool_t *pool, tn_buffer_t **out_buffer)
 {
-	assert(pool);
-	assert(out_buffer);
+	TN_ASSERT(pool);
+	TN_ASSERT(out_buffer);
 
 	*out_buffer = NULL;
 
 	TN_GUARD(tn_queue_spsc_peek(&pool->tn_buffers_free, (void **)out_buffer));
-	assert(*out_buffer);
+	TN_ASSERT(*out_buffer);
 
 	tn_buffer_reset(*out_buffer);
 
@@ -91,7 +91,7 @@ int tn_buffer_pool_peek(tn_buffer_pool_t *pool, tn_buffer_t **out_buffer)
 // --------------------------------------------------------------------------------------------------------------
 int tn_buffer_pool_pop(tn_buffer_pool_t *pool)
 {
-	assert(pool);
+	TN_ASSERT(pool);
 
 	TN_GUARD(tn_queue_spsc_pop(&pool->tn_buffers_free));
 
@@ -104,7 +104,7 @@ int tn_buffer_pool_pop(tn_buffer_pool_t *pool)
 // --------------------------------------------------------------------------------------------------------------
 void tn_buffer_pool_pop_cached(tn_buffer_pool_t *pool)
 {
-	assert(pool);
+	TN_ASSERT(pool);
 
 	tn_queue_spsc_pop_cached(&pool->tn_buffers_free);
 
@@ -115,13 +115,13 @@ void tn_buffer_pool_pop_cached(tn_buffer_pool_t *pool)
 // --------------------------------------------------------------------------------------------------------------
 int tn_buffer_pool_pop_back(tn_buffer_pool_t *pool, tn_buffer_t **out_buffer)
 {
-	assert(pool);
-	assert(out_buffer);
+	TN_ASSERT(pool);
+	TN_ASSERT(out_buffer);
 
 	*out_buffer = NULL;
 
 	TN_GUARD(tn_queue_spsc_pop_back(&pool->tn_buffers_free, (void **)out_buffer));
-	assert(*out_buffer);
+	TN_ASSERT(*out_buffer);
 
 	pool->blocks_inuse++;
 	pool->bytes_inuse += pool->block_size;

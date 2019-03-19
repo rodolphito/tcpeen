@@ -32,7 +32,7 @@ void on_sigint_cb(uv_signal_t *handle, int signum)
 	tn_log_trace("received SIGINT");
 
 	tcp_service_t *service = handle->data;
-	assert(service);
+	TN_ASSERT(service);
 	
 	if (tcp_service_stop_signal(service)) {
 		tn_log_error("failed to stop tcp service");
@@ -49,7 +49,7 @@ void on_close_handle_cb(uv_handle_t *handle)
 void on_close_channel_cb(uv_handle_t *handle)
 {
 	tcp_channel_t *channel = handle->data;
-	assert(channel);
+	TN_ASSERT(channel);
 	channel->state = TCP_CHANNEL_CLOSED;
 
 	if (channel->read_buffer) {
@@ -78,7 +78,7 @@ cleanup:
 void on_send_cb(uv_write_t *req, int status)
 {
 	tcp_service_write_req_t *write_req = (tcp_service_write_req_t *)req;
-	assert(write_req);
+	TN_ASSERT(write_req);
 
 	if (status) {
 		tn_log_uv_error(status);
@@ -104,7 +104,7 @@ void on_recv_alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
 	TN_GUARD_CLEANUP(!handle);
 	tcp_channel_t *channel = handle->data;
-	assert(channel);
+	TN_ASSERT(channel);
 
 	if (!channel->read_buffer) {
 		if (tn_buffer_pool_pop_back(&channel->service->pool_read, &channel->read_buffer)) {
@@ -130,7 +130,7 @@ cleanup:
 //{
 //	int ret;
 //	uv_buffer_work_req_t *work_req = (uv_buffer_work_req_t *)req;
-//	assert(work_req);
+//	TN_ASSERT(work_req);
 //
 //	if (work_req->ret || work_req->close || status == UV_ECANCELED) {
 //		goto cleanup;
@@ -153,7 +153,7 @@ cleanup:
 //	tcp_service_write_req_t *send_req = NULL;
 //
 //	uv_buffer_work_req_t *work_req = (uv_buffer_work_req_t *)req;
-//	assert(work_req);
+//	TN_ASSERT(work_req);
 //
 //	if (!(send_req = TN_MEM_ACQUIRE(sizeof(*send_req)))) {
 //		tn_log_uv_error(UV_ENOMEM);
@@ -181,7 +181,7 @@ void on_recv_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf)
 	int close_channel = 0;
 	uv_buffer_work_req_t *work_req = NULL;
 	tcp_channel_t *channel = handle->data;
-	assert(channel);
+	TN_ASSERT(channel);
 
 	if (nread < 0) {
 		/* nread is an errno when < 0 */
@@ -246,7 +246,7 @@ void on_connection_cb(uv_stream_t *server_handle, int status)
 	}
 
 	tcp_service_t *service = server_handle->data;
-	assert(service);
+	TN_ASSERT(service);
 	tcp_service_priv_t *priv = service->priv;
 
 	ret = UV_ENOMEM;
@@ -327,7 +327,7 @@ void on_prep_cb(uv_prepare_t *handle)
 	TN_GUARD_NULL_CLEANUP(service);
 
 	while (!tn_queue_spsc_pop_back(&service->write_reqs_ready, (void **)&send_req)) {
-		assert(send_req);
+		TN_ASSERT(send_req);
 
 		if (send_req->channel->state != TCP_CHANNEL_OPEN) {
 			tn_buffer_pool_push(&service->pool_write, send_req->buffer);

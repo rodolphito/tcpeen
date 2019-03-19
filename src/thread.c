@@ -23,14 +23,14 @@ uint64_t tn_thread_id(void)
 // --------------------------------------------------------------------------------------------------------------
 int tn_thread_setup(tn_thread_t *thread)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	return aws_thread_init((struct aws_thread *)thread, aws_default_allocator());
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tn_thread_launch(tn_thread_t *thread, void(*func)(void *arg), void *arg)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	tn_thread_setup(thread);
 	return aws_thread_launch((struct aws_thread *)thread, func, arg, aws_default_thread_options());
 }
@@ -38,28 +38,28 @@ int tn_thread_launch(tn_thread_t *thread, void(*func)(void *arg), void *arg)
 // --------------------------------------------------------------------------------------------------------------
 uint64_t tn_thread_get_id(tn_thread_t *thread)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	return aws_thread_get_id((struct aws_thread *)thread);
 }
 
 
 enum tn_thread_state tn_thread_get_state(tn_thread_t *thread)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	return (enum tn_thread_state)aws_thread_get_detach_state((struct aws_thread *)thread);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tn_thread_join(tn_thread_t *thread)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	return aws_thread_join((struct aws_thread *)thread);
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void tn_thread_cleanup(tn_thread_t *thread)
 {
-	assert(thread);
+	TN_ASSERT(thread);
 	aws_thread_clean_up((struct aws_thread *)thread);
 }
 

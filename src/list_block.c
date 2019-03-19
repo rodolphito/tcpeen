@@ -50,9 +50,9 @@ void tn_list_block_cleanup(tn_list_block_t *list)
 // --------------------------------------------------------------------------------------------------------------
 int tn_list_block_push_back(tn_list_block_t *list, void **item, uint64_t *out_index)
 {
-	assert(list);
-	assert(item);
-	assert(*item);
+	TN_ASSERT(list);
+	TN_ASSERT(item);
+	TN_ASSERT(*item);
 
 	if (out_index) *out_index = aws_array_list_length(list->priv_impl);
 	TN_GUARD(aws_array_list_push_back(list->priv_impl, item));
@@ -63,12 +63,12 @@ int tn_list_block_push_back(tn_list_block_t *list, void **item, uint64_t *out_in
 // --------------------------------------------------------------------------------------------------------------
 int tn_list_block_pop_back(tn_list_block_t *list, void **item)
 {
-	assert(list);
-	assert(item);
+	TN_ASSERT(list);
+	TN_ASSERT(item);
 
 	TN_GUARD(aws_array_list_back(list->priv_impl, item));
 	TN_GUARD(aws_array_list_pop_back(list->priv_impl));
-	//assert(*item);
+	//TN_ASSERT(*item);
 	return TN_SUCCESS;
 }
 

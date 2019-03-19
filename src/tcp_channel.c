@@ -10,22 +10,22 @@
 // --------------------------------------------------------------------------------------------------------------
 tcp_channel_state_t tcp_channel_state(tcp_channel_t *channel)
 {
-	assert(channel);
+	TN_ASSERT(channel);
 	return channel->state;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 tcp_channel_read_state_t tcp_channel_read_state(tcp_channel_t *channel)
 {
-	assert(channel);
+	TN_ASSERT(channel);
 	return channel->read_state;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 int tcp_channel_read_header(tcp_channel_t *channel, uint32_t *out_len)
 {
-	assert(channel);
-	assert(channel->read_buffer);
+	TN_ASSERT(channel);
+	TN_ASSERT(channel->read_buffer);
 	TN_GUARD_CLEANUP(tn_buffer_read_be32(channel->read_buffer, out_len));
 	channel->next_payload_len = *out_len;
 	channel->read_state = TCP_CHANNEL_READ_PAYLOAD;
@@ -39,8 +39,8 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 int tcp_channel_read_payload(tcp_channel_t *channel, tn_buffer_span_t *out_span)
 {
-	assert(channel && channel->read_buffer);
-	assert(out_span);
+	TN_ASSERT(channel && channel->read_buffer);
+	TN_ASSERT(out_span);
 
 	out_span->ptr = tn_buffer_read_ptr(channel->read_buffer);
 	out_span->len = channel->next_payload_len;
@@ -57,7 +57,7 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 int tcp_channel_buffer_swap(tcp_channel_t *channel)
 {
-	assert(channel && channel->read_buffer);
+	TN_ASSERT(channel && channel->read_buffer);
 	
 	tn_buffer_t *prev_buffer = channel->read_buffer;
 	TN_GUARD(tn_buffer_pool_pop_back(&channel->service->pool_read, &channel->read_buffer));
@@ -132,8 +132,8 @@ int tcp_channel_list_open(tcp_channel_list_t *list, tcp_channel_t **out_channel)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_channel_list_close(tcp_channel_list_t *list, tcp_channel_t *channel)
 {
-	assert(list);
-	assert(channel);
+	TN_ASSERT(list);
+	TN_ASSERT(channel);
 
 	//TN_GUARD(tn_list_ptr_remove(&list->client_list_open, channel->list_id));
 	TN_GUARD(tn_list_ptr_push_back(&list->client_list_free, channel));
@@ -163,8 +163,8 @@ int tcp_channel_list_reset(tcp_channel_list_t *list)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_channel_list_get(tcp_channel_list_t *list, uint64_t client_id, tcp_channel_t **out_channel)
 {
-	assert(list);
-	assert(out_channel);
+	TN_ASSERT(list);
+	TN_ASSERT(out_channel);
 	*out_channel = NULL;
 	if (client_id >= list->clients_max) return TN_ERROR;
 	*out_channel = &list->client_map[client_id];

@@ -20,7 +20,7 @@ bool tn_map_key_cmp_fn(const void *a, const void *b)
 // --------------------------------------------------------------------------------------------------------------
 int tn_map_setup(tn_map_t *map, uint64_t capacity)
 {
-	assert(map);
+	TN_ASSERT(map);
 	memset(map, 0, sizeof(*map));
 
 	map->capacity = capacity;
@@ -39,7 +39,7 @@ cleanup:
 // --------------------------------------------------------------------------------------------------------------
 void tn_map_cleanup(tn_map_t *map)
 {
-	assert(map);
+	TN_ASSERT(map);
 	aws_hash_table_clean_up((struct aws_hash_table *)map->priv);
 	TN_MEM_RELEASE(map->priv);
 }
@@ -47,9 +47,9 @@ void tn_map_cleanup(tn_map_t *map)
 // --------------------------------------------------------------------------------------------------------------
 int tn_map_get(tn_map_t *map, void *key, void **out_value)
 {
-	assert(map);
-	assert(map->priv);
-	assert(out_value);
+	TN_ASSERT(map);
+	TN_ASSERT(map->priv);
+	TN_ASSERT(out_value);
 
 	*out_value = NULL;
 	struct aws_hash_element *elem = NULL;
@@ -64,9 +64,9 @@ int tn_map_get(tn_map_t *map, void *key, void **out_value)
 // --------------------------------------------------------------------------------------------------------------
 int tn_map_set(tn_map_t *map, void *key, void *value)
 {
-	assert(map);
-	assert(map->priv);
-	assert(value);
+	TN_ASSERT(map);
+	TN_ASSERT(map->priv);
+	TN_ASSERT(value);
 
 	int created = 0;
 	TN_GUARD(aws_hash_table_put((struct aws_hash_table *)map->priv, key, value, &created));
@@ -78,8 +78,8 @@ int tn_map_set(tn_map_t *map, void *key, void *value)
 // --------------------------------------------------------------------------------------------------------------
 int tn_map_remove(tn_map_t *map, void *key)
 {
-	assert(map);
-	assert(map->priv);
+	TN_ASSERT(map);
+	TN_ASSERT(map->priv);
 
 	int removed = 0;
 	TN_GUARD(aws_hash_table_remove((struct aws_hash_table *)map->priv, key, NULL, &removed));
@@ -91,7 +91,7 @@ int tn_map_remove(tn_map_t *map, void *key)
 // --------------------------------------------------------------------------------------------------------------
 void tn_map_clear(tn_map_t *map)
 {
-	assert(map);
-	assert(map->priv);
+	TN_ASSERT(map);
+	TN_ASSERT(map->priv);
 	aws_hash_table_clear((struct aws_hash_table *)map->priv);
 }

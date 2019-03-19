@@ -15,7 +15,7 @@ typedef struct tn_system_priv_s {
 // --------------------------------------------------------------------------------------------------------------
 int tn_system_setup(tn_system_t *system)
 {
-	assert(system);
+	TN_ASSERT(system);
 
 	tn_system_priv_t *priv = NULL;
 	TN_GUARD_NULL(priv = TN_MEM_ACQUIRE(sizeof(*priv)));
@@ -33,7 +33,7 @@ int tn_system_setup(tn_system_t *system)
 // --------------------------------------------------------------------------------------------------------------
 void tn_system_cleanup(tn_system_t *system)
 {
-	assert(system);
+	TN_ASSERT(system);
 
 	tn_system_priv_t *priv = system->priv;
 	if (priv->cpu_info) uv_free_cpu_info(priv->cpu_info, priv->cpu_count);
@@ -45,7 +45,7 @@ void tn_system_cleanup(tn_system_t *system)
 // --------------------------------------------------------------------------------------------------------------
 uint32_t tn_system_cpu_count(tn_system_t *system)
 {
-	assert(system && system->priv);
+	TN_ASSERT(system && system->priv);
 
 	return ((tn_system_priv_t *)system->priv)->cpu_count;
 

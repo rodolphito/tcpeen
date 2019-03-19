@@ -423,7 +423,7 @@ void tcp_conn_delete(tcp_conn_t **pconn)
 // --------------------------------------------------------------------------------------------------------------
 int tcp_conn_init(tcp_ctx_t *ctx, tcp_conn_t *conn)
 {
-	assert(conn && ctx);
+	TN_ASSERT(conn && ctx);
 	
 	memset(conn, 0, sizeof(tcp_conn_t));
 	conn->ctx = ctx;

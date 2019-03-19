@@ -26,9 +26,9 @@ void tn_list_ptr_cleanup(tn_list_ptr_t *list)
 // --------------------------------------------------------------------------------------------------------------
 int tn_list_ptr_push_back(tn_list_ptr_t *list, void *item)
 {
-	assert(list);
-	assert(list->data);
-	assert(item);
+	TN_ASSERT(list);
+	TN_ASSERT(list->data);
+	TN_ASSERT(item);
 
 	TN_GUARD(list->index >= list->capacity);
 	list->data[list->index++] = (uintptr_t)item;
@@ -39,9 +39,9 @@ int tn_list_ptr_push_back(tn_list_ptr_t *list, void *item)
 // --------------------------------------------------------------------------------------------------------------
 int tn_list_ptr_pop_back(tn_list_ptr_t *list, void **item)
 {
-	assert(list);
-	assert(list->data);
-	assert(item);
+	TN_ASSERT(list);
+	TN_ASSERT(list->data);
+	TN_ASSERT(item);
 
 	TN_GUARD(list->index == 0);
 	*item = (void *)list->data[--list->index];
@@ -52,28 +52,28 @@ int tn_list_ptr_pop_back(tn_list_ptr_t *list, void **item)
 // --------------------------------------------------------------------------------------------------------------
 uint64_t tn_list_ptr_count(tn_list_ptr_t *list)
 {
-	assert(list);
+	TN_ASSERT(list);
 	return list->index;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void tn_list_ptr_clear(tn_list_ptr_t *list)
 {
-	assert(list);
+	TN_ASSERT(list);
 	list->index = 0;
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void *tn_list_ptr_get(tn_list_ptr_t *list, uint64_t index)
 {
-	assert(list);
+	TN_ASSERT(list);
 	return (void *)list->data[index];
 }
 
 // --------------------------------------------------------------------------------------------------------------
 void tn_list_ptr_swap(tn_list_ptr_t *list, uint64_t index1, uint64_t index2)
 {
-	assert(list);
+	TN_ASSERT(list);
 
 	uintptr_t tmp = list->data[index1];
 	list->data[index1] = list->data[index2];
@@ -83,7 +83,7 @@ void tn_list_ptr_swap(tn_list_ptr_t *list, uint64_t index1, uint64_t index2)
 // --------------------------------------------------------------------------------------------------------------
 int tn_list_ptr_remove(tn_list_ptr_t *list, size_t index)
 {
-	assert(list);
+	TN_ASSERT(list);
 
 	TN_GUARD(list->index == 0);
 
