@@ -1,7 +1,6 @@
 #include "tn/mutex.h"
 
-#include <assert.h>
-
+#include "tn/error.h"
 #include "aws/common/mutex.h"
 
 
