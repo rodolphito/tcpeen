@@ -73,6 +73,11 @@ list(APPEND TN_TARGET_LINK_LIBS aws-c-common)
 include_directories(${CMAKE_SOURCE_DIR}/deps/libpcap)
 if(WIN32)
 	list(APPEND TN_TARGET_LINK_LIBS ${CMAKE_SOURCE_DIR}/deps/winpcap/lib/x64/wpcap.lib)
+else()
+	set(DISABLE_DBUS TRUE)
+	set(BUILD_SHARED_LIBS FALSE)
+	add_subdirectory(${CMAKE_SOURCE_DIR}/deps/libpcap)
+	list(APPEND TN_TARGET_LINK_LIBS pcap_static)
 endif()
 
 

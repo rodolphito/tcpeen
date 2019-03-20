@@ -862,6 +862,7 @@ endif(NOT WIN32)
 # turn sanitizer stuff on).
 #
 set(SANITIZER_FLAGS "")
+if(ENABLE_SANITIZERS)
 foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
     # Set -Werror to catch "argument unused during compilation" warnings
 
@@ -909,6 +910,7 @@ endforeach()
 if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+endif()
 endif()
 
 #
