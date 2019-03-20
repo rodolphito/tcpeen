@@ -258,7 +258,6 @@ int main(void)
 	}
 	pcap_close(pd);
 	pcap_freecode(&fcode);
-	free(cmdbuf);
 	exit(status == -1 ? 1 : 0);
 }
 
@@ -269,6 +268,7 @@ static void countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	(*counterp)++;
 }
 
+#if TN_PLATFORM_WINDOWS
 const char *pcap_statustostr(int errnum)
 {
 	static char ebuf[15 + 10 + 1];
@@ -323,3 +323,4 @@ const char *pcap_statustostr(int errnum)
 	snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 }
+#endif
