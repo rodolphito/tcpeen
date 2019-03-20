@@ -75,7 +75,7 @@ void on_fslog_read_cb(uv_fs_t *req)
 		}
 	} else if (req->result > 0) {
 		tn_log_trace("read %zd bytes");
-		uv_buf_t iov = uv_buf_init(tn_buffer_write_ptr(fslog->buffer), tn_buffer_capacity(fslog->buffer));
+		uv_buf_t iov = uv_buf_init(tn_buffer_write_ptr(fslog->buffer), TN_BUFLEN_CAST(tn_buffer_capacity(fslog->buffer)));
 		TN_GUARD_CLEANUP(uv_fs_read(priv->uv_loop, &priv->uv_fsread_req, (uv_file)req->result, &iov, 1, -1, on_fslog_read_cb));
 	}
 
@@ -99,7 +99,7 @@ void on_fslog_open_cb(uv_fs_t *req)
 				TN_GUARD_CLEANUP(tn_buffer_pool_pop_back(&fslog->pool, &fslog->buffer));
 			}
 			tn_log_trace("starting read");
-			uv_buf_t iov = uv_buf_init(tn_buffer_write_ptr(fslog->buffer), tn_buffer_capacity(fslog->buffer));
+			uv_buf_t iov = uv_buf_init(tn_buffer_write_ptr(fslog->buffer), TN_BUFLEN_CAST(tn_buffer_capacity(fslog->buffer)));
 			TN_GUARD_CLEANUP(uv_fs_read(priv->uv_loop, &priv->uv_fsread_req, (uv_file)req->result, &iov, 1, -1, on_fslog_read_cb));
 		}
 	} else {

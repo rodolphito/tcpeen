@@ -6,7 +6,14 @@
 #include "aws/common/byte_order.h"
 #include "aws/common/byte_buf.h"
 
+#include "tn/error.h"
 #include "tn/mutex.h"
+
+#if TN_PLATFORM_WINDOWS
+#	define TN_BUFLEN_CAST(sz) ((unsigned int)sz)
+#else
+#	define TN_BUFLEN_CAST(sz) (sz)
+#endif
 
 // forwards
 struct tn_buffer_pool_s;
