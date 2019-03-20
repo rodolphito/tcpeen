@@ -23,8 +23,9 @@ int tn_system_setup(tn_system_t *system)
 	memset(priv, 0, sizeof(*priv));
 	system->priv = priv;
 
-	TN_GUARD(uv_cpu_info(&priv->cpu_info, &priv->cpu_count));
-	
+	int cpu_count = priv->cpu_count = 0;
+	TN_GUARD(uv_cpu_info(&priv->cpu_info, &cpu_count));
+	priv->cpu_count = (uint32_t)cpu_count;
 
 	return TN_SUCCESS;
 }

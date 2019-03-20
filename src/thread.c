@@ -87,7 +87,7 @@ int tn_thread_set_workers(uint32_t count)
 	TN_GUARD(count > TN_WORKERS_MAX);
 
 	char buf[255];
-	snprintf(buf, 255, "%lu", count);
+	snprintf(buf, 255, "%u", count);
 	TN_GUARD(uv_os_setenv("UV_THREADPOOL_SIZE", buf));
 	return TN_SUCCESS;
 }
