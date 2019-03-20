@@ -74,6 +74,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 set(TCP_LIBRARY_SRCS
 	src/log.c
 	include/tn/log.h
+	src/fslog.c
+	include/tn/fslog.h
 	src/system.c
 	include/tn/system.h
 	src/endpoint.c
