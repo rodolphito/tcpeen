@@ -126,8 +126,9 @@ void on_fslog_walk_cb(uv_handle_t* handle, void* arg)
 }
 
 // private thread main ------------------------------------------------------------------------------------------
-void tn_fslog_thread(tn_fslog_t *fslog)
+void tn_fslog_thread(void *data)
 {
+	tn_fslog_t *fslog = data;
 	TN_ASSERT(fslog);
 
 	int flags, mode;
