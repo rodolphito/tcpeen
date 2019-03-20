@@ -69,6 +69,14 @@ list(APPEND TN_TARGET_LINK_LIBS aws-c-common)
 
 
 #
+# libpcap/winpcap dependency
+include_directories(${CMAKE_SOURCE_DIR}/deps/libpcap)
+if(WIN32)
+	list(APPEND TN_TARGET_LINK_LIBS ${CMAKE_SOURCE_DIR}/deps/winpcap/lib/x64/wpcap.lib)
+endif()
+
+
+#
 # build tcpeen library
 include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 set(TCP_LIBRARY_SRCS
@@ -190,6 +198,16 @@ set(TCP_SERVER_SRCS
 add_executable(tcpserv_unity ${TCP_SERVER_SRCS})
 target_link_libraries(tcpserv_unity ${TN_TARGET_LINK_LIBS})
 target_compile_definitions(tcpserv_unity PRIVATE ${TN_TARGET_COMPILE_DEFS})
+
+
+#
+# build sniff executable
+set(SNIFF_SRCS
+	src/sniff/sniff.c
+)
+add_executable(sniff ${SNIFF_SRCS})
+target_link_libraries(sniff ${TN_TARGET_LINK_LIBS})
+target_compile_definitions(sniff PRIVATE ${TN_TARGET_COMPILE_DEFS})
 
 
 #
