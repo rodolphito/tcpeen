@@ -2,7 +2,8 @@
 
 #include "pcap.h"
 
-
+#include "tn/error.h"
+#include "tn/log.h"
 
 static int ifprint(pcap_if_t *d)
 {
@@ -146,36 +147,179 @@ static char *iptos(bpf_u_int32 in)
 	return output[which];
 }
 
+static char *program_name;
+
+/* Forwards */
+static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
+
+static pcap_t *pd;
+
 
 int main(void)
 {
-	pcap_if_t *alldevs;
-	pcap_if_t *d;
-	bpf_u_int32 net, mask;
-	int exit_status = 0;
-	char errbuf[PCAP_ERRBUF_SIZE + 1];
+	char *cmdbuf = "";
+	char *device = NULL;
+	int timeout = 1000;
+	int immediate = 0;
+	int nonblock = 0;
+	pcap_if_t *devlist;
+	bpf_u_int32 localnet, netmask;
+	struct bpf_program fcode;
+	char ebuf[PCAP_ERRBUF_SIZE];
+	int status;
+	int packet_count;
 
-	if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-		fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
-		exit(1);
+	//immediate = 1;
+	//nonblock = 1;
+
+	if (device == NULL) {
+		if (pcap_findalldevs(&devlist, ebuf) == -1)
+			tn_log_error("%s", ebuf);
+		if (devlist == NULL)
+			tn_log_error("no interfaces available for capture");
+		device = strdup(devlist->name);
+		pcap_freealldevs(devlist);
+	}
+	*ebuf = '\0';
+	pd = pcap_create(device, ebuf);
+	if (pd == NULL)
+		tn_log_error("%s", ebuf);
+	status = pcap_set_snaplen(pd, 65535);
+	if (status != 0)
+		tn_log_error("%s: pcap_set_snaplen failed: %s",
+			device, pcap_statustostr(status));
+	//if (immediate) {
+	//	status = pcap_set_immediate_mode(pd, 1);
+	//	if (status != 0)
+	//		tn_log_error("%s: pcap_set_immediate_mode failed: %s",
+	//			device, pcap_statustostr(status));
+	//}
+	status = pcap_set_timeout(pd, timeout);
+	if (status != 0)
+		tn_log_error("%s: pcap_set_timeout failed: %s",
+			device, pcap_statustostr(status));
+	status = pcap_activate(pd);
+	if (status < 0) {
+		/*
+		 * pcap_activate() failed.
+		 */
+		tn_log_error("%s: %s\n(%s)", device,
+			pcap_statustostr(status), pcap_geterr(pd));
+	} else if (status > 0) {
+		/*
+		 * pcap_activate() succeeded, but it's warning us
+		 * of a problem it had.
+		 */
+		tn_log_warning("%s: %s\n(%s)", device,
+			pcap_statustostr(status), pcap_geterr(pd));
+	}
+	if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) {
+		localnet = 0;
+		netmask = 0;
+		tn_log_warning("%s", ebuf);
+	}
+	//cmdbuf = copy_argv(&argv[optind]);
+
+	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0) {
+		tn_log_error("%s", pcap_geterr(pd));
 	}
 
-	for (d = alldevs; d; d = d->next) {
-		if (!ifprint(d))
-			exit_status = 2;
-	}
-
-	if (alldevs != NULL) {
-		if (pcap_lookupnet(alldevs->name, &net, &mask, errbuf) < 0) {
-			fprintf(stderr, "Error in pcap_lookupnet: %s\n", errbuf);
-			exit_status = 2;
-		} else {
-			printf("Preferred device is on network: %s/%s\n", iptos(net), iptos(mask));
+	if (pcap_setfilter(pd, &fcode) < 0)
+		tn_log_error("%s", pcap_geterr(pd));
+	if (pcap_setnonblock(pd, nonblock, ebuf) == -1)
+		tn_log_error("pcap_setnonblock failed: %s", ebuf);
+	printf("Listening on %s\n", device);
+	for (;;) {
+		packet_count = 0;
+		status = pcap_dispatch(pd, -1, countme,
+			(u_char *)&packet_count);
+		if (status < 0)
+			break;
+		if (status != 0) {
+			printf("%d packets seen, %d packets counted after pcap_dispatch returns\n",
+				status, packet_count);
 		}
 	}
+	if (status == -2) {
+		/*
+		 * We got interrupted, so perhaps we didn't
+		 * manage to finish a line we were printing.
+		 * Print an extra newline, just in case.
+		 */
+		putchar('\n');
+	}
+	(void)fflush(stdout);
+	if (status == -1) {
+		/*
+		 * Error.  Report it.
+		 */
+		(void)fprintf(stderr, "%s: pcap_loop: %s\n",
+			program_name, pcap_geterr(pd));
+	}
+	pcap_close(pd);
+	pcap_freecode(&fcode);
+	free(cmdbuf);
+	exit(status == -1 ? 1 : 0);
+}
 
-	pcap_freealldevs(alldevs);
-	exit(exit_status);
+static void countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+{
+	int *counterp = (int *)user;
 
-	return 0;
+	(*counterp)++;
+}
+
+const char *pcap_statustostr(int errnum)
+{
+	static char ebuf[15 + 10 + 1];
+
+	switch (errnum) {
+
+	case PCAP_WARNING:
+		return("Generic warning");
+
+	case PCAP_WARNING_TSTAMP_TYPE_NOTSUP:
+		return ("That type of time stamp is not supported by that device");
+
+	case PCAP_WARNING_PROMISC_NOTSUP:
+		return ("That device doesn't support promiscuous mode");
+
+	case PCAP_ERROR:
+		return("Generic error");
+
+	case PCAP_ERROR_BREAK:
+		return("Loop terminated by pcap_breakloop");
+
+	case PCAP_ERROR_NOT_ACTIVATED:
+		return("The pcap_t has not been activated");
+
+	case PCAP_ERROR_ACTIVATED:
+		return ("The setting can't be changed after the pcap_t is activated");
+
+	case PCAP_ERROR_NO_SUCH_DEVICE:
+		return ("No such device exists");
+
+	case PCAP_ERROR_RFMON_NOTSUP:
+		return ("That device doesn't support monitor mode");
+
+	case PCAP_ERROR_NOT_RFMON:
+		return ("That operation is supported only in monitor mode");
+
+	case PCAP_ERROR_PERM_DENIED:
+		return ("You don't have permission to capture on that device");
+
+	case PCAP_ERROR_IFACE_NOT_UP:
+		return ("That device is not up");
+
+	case PCAP_ERROR_CANTSET_TSTAMP_TYPE:
+		return ("That device doesn't support setting the time stamp type");
+
+	case PCAP_ERROR_PROMISC_PERM_DENIED:
+		return ("You don't have permission to capture in promiscuous mode on that device");
+
+	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
+		return ("That device doesn't support that time stamp precision");
+	}
+	snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	return(ebuf);
 }
